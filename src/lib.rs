@@ -1,4 +1,4 @@
-mod address;
+pub mod address;
 
 #[cfg(test)]
 mod tests {

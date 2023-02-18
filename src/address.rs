@@ -1,89 +1,60 @@
+use std::array::TryFromSliceError;
+use std::iter::once;
 use derive_more::From;
-use base58check::FromBase58CheckError;
-
-struct FromXRPLengthError;
+use base58check::{FromBase58Check, FromBase58CheckError, ToBase58Check};
 
 #[derive(From)]
-enum FromXRPDecodingError {
+pub enum FromXRPDecodingError {
     FromBase58Check(FromBase58CheckError),
     WrongPrefix,
-    WrongLength(FromXRPLengthError),
+    WrongLength(TryFromSliceError),
 }
 
+pub struct Encoding<
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char
+>([u8; LENGTH]);
+
 // TODO: Unit test that `human_representation_starts_with` and `type_prefix` agree.
-trait Encoding<const length: usize>: Sized {
+impl<
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char,
+> Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
     /// Byte added as prefix to sequence before encoding
-    fn type_prefix() -> u8;
+    pub const TYPE_PREFIX: u8 = TYPE_PREFIX;
     /// The letter from which base58 representation starts
-    fn human_representation_starts_with() -> char;
-    fn bytes_without_prefix(&self) -> &[u8];
-    fn from_bytes_without_prefix(bytes: &[u8]) -> Result<Self, FromXRPLengthError>;
-    fn bytes(&self) -> Vec<u8> {
-        type_prefix().once().chain(self.bytes_without_prefix()).collect()
+    pub const HUMAN_REPRESENTATION_STARTS_WITH: char = HUMAN_REPRESENTATION_STARTS_WITH;
+    pub fn bytes_without_prefix(&self) -> [u8; LENGTH] {
+        self.0
     }
-    fn encode(&self) -> String {
-        bytes_without_prefix().as_bytes().to_base58check(Self::type_prefix())
+    pub fn from_bytes_without_prefix(bytes: [u8; LENGTH]) -> Self {
+        Self(bytes)
     }
-    fn decode(s: String) -> Result<Self, FromXRPDecodingError> {
+    pub fn bytes_with_prefix(&self) -> Vec<u8> {
+        once(TYPE_PREFIX).chain(self.bytes_without_prefix()).collect()
+    }
+    pub fn encode(&self) -> String {
+        (&self.bytes_without_prefix() as &[u8]).to_base58check(Self::TYPE_PREFIX)
+    }
+    pub fn decode(s: String) -> Result<Self, FromXRPDecodingError> {
         let (prefix, bytes) = s.from_base58check()?;
-        if prefix != Self::type_prefix() {
+        if prefix != Self::TYPE_PREFIX {
             return Err(FromXRPDecodingError::WrongPrefix).into();
         }
-        Self::from_bytes_without_prefix(bytes)
+        Ok(Self::from_bytes_without_prefix(bytes.as_slice().try_into()?))
     }
 }
 
 /// Account address
-struct Address([u8; 20]);
-
-impl Encoding for Address {
-    fn type_prefix() -> u8 {
-        0x00
-    }
-    fn human_representation_starts_with() -> char {
-        'r'
-    }
-    fn bytes_without_prefix(&self) -> &[u8] {
-        self.0 as &[u8]
-    }
-    fn from_bytes_without_prefix(bytes: &[u8]) -> Result<Self, FromXRPLengthError> {
-        Self(<[u8; 20]>::try_from(bytes)?)
-        // Self(bytes.try_into::<[u8; 20]>()?)
-    }
-}
+pub type Address = Encoding<20, 0x00, 'r'>;
 
 /// Account public key
-struct AccountPublicKey([u8; 33]);
-
-impl Encoding for AccountPublicKey {
-    fn type_prefix() -> u8 {
-        0x23
-    }
-    fn human_representation_starts_with() -> char {
-        'a'
-    }
-}
+pub type AccountPublicKey = Encoding<33, 0x23, 'a'>;
 
 /// Seed value (for secret keys)
-struct SeedValue([u8; 16]);
-
-impl Encoding for SeedValue {
-    fn type_prefix() -> u8 {
-        0x21
-    }
-    fn human_representation_starts_with() -> char {
-        's'
-    }
-}
+pub type SeedValue = Encoding<16, 0x21, 's'>;
 
 /// Validation public key or node public key
-struct ValidationOrNodePublicKey([u8; 33]);
-
-impl Encoding for ValidationOrNodePublicKey {
-    fn type_prefix() -> u8 {
-        0x1C
-    }
-    fn human_representation_starts_with() -> char {
-        'n'
-    }
-}
+pub type ValidationOrNodePublicKey = Encoding<33, 0x1C, 'n'>;
