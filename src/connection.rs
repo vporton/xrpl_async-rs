@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use serde_json::{Value, json};
+use serde_json::{Number, Value, json};
 
 pub trait FormatRequest {
     fn to_json(&self) -> Value;
@@ -21,7 +21,7 @@ pub struct Request<'a> {
 /// For WebSocket.
 pub struct StreamedRequest<'a> {
     request: Request<'a>,
-    id: &'a str,
+    id: u64,
 }
 
 lazy_static! {
@@ -49,7 +49,7 @@ impl<'a> FormatRequest for Request<'a> {
 impl<'a> FormatRequest for StreamedRequest<'a> {
     fn to_json(&self) -> Value {
         let mut params = serde_json::Map::<String, Value>::new();
-        params[&*ID_KEY] = Value::String(self.id.to_owned());
+        params[&*ID_KEY] = Value::Number(Number::from(self.id));
         params[&*COMMAND_KEY] = Value::String(self.request.command.to_owned());
         if let Some(api_version) = self.request.api_version {
             params[&*API_VERSION_KEY] = Value::String(api_version.to_string());
