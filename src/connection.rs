@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+use std::sync::Arc;
 use derive_more::From;
 use lazy_static::lazy_static;
 use serde_json::{Number, Value, json};
 use async_trait::async_trait;
 use reqwest::Client;
+use workflow_websocket::client::{Message, WebSocket};
 
 #[derive(Debug)]
 pub struct WrongFieldsError;
@@ -136,7 +139,7 @@ impl<'a> ParseResponse for StreamedResponse {
 /// `E` is error
 #[async_trait]
 pub trait Api<E> {
-    async fn call(&mut self, request: &Request) -> Result<Response, E>;
+    async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, E>;
 }
 
 pub struct JsonRpcApi {
@@ -154,29 +157,89 @@ impl JsonRpcApi {
 }
 
 #[derive(Debug, From)]
-pub enum JsonRpcError {
+pub enum JsonRpcApiError {
     Reqwest(reqwest::Error),
     Parse(ParseResponseError),
 }
 
-impl From<WrongFieldsError> for JsonRpcError {
+impl From<WrongFieldsError> for JsonRpcApiError {
     fn from(value: WrongFieldsError) -> Self {
         Self::Parse(value.into())
     }
 }
 
-impl From<serde_json::Error> for JsonRpcError {
+impl From<serde_json::Error> for JsonRpcApiError {
     fn from(value: serde_json::Error) -> Self {
         Self::Parse(value.into())
     }
 }
 
 #[async_trait]
-impl Api<JsonRpcError> for JsonRpcApi {
-    async fn call(&mut self, request: &Request) -> Result<Response, JsonRpcError> {
+impl Api<JsonRpcApiError> for JsonRpcApi {
+    async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
             .body(request.to_string()?)
             .send().await?;
         Ok(Response::from_json(&result.json::<Value>().await?)?)
+    }
+}
+
+pub struct WebSocketApi {
+    client: WebSocket,
+    responses: HashMap<u64, Response>,
+    id: u64,
+}
+
+impl WebSocketApi {
+    pub fn new(client: WebSocket) -> Self {
+        Self {
+            client,
+            responses: HashMap::new(),
+            id: 0,
+        }
+    }
+}
+
+#[derive(Debug, From)]
+pub enum WebSocketApiError {
+    WebSocket(workflow_websocket::client::Error),
+    WebSocket2(Arc<workflow_websocket::client::Error>),
+    Parse(ParseResponseError),
+}
+
+impl From<WrongFieldsError> for WebSocketApiError {
+    fn from(value: WrongFieldsError) -> Self {
+        Self::Parse(value.into())
+    }
+}
+
+impl From<serde_json::Error> for WebSocketApiError {
+    fn from(value: serde_json::Error) -> Self {
+        Self::Parse(value.into())
+    }
+}
+
+#[async_trait]
+impl Api<WebSocketApiError> for WebSocketApi {
+    async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, WebSocketApiError> {
+        let id = self.id;
+        self.id += 1;
+        let full_request = StreamedRequest {
+            id,
+            request,
+        };
+        // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
+        self.client.send(full_request.to_string()?.into()).await?; // Why do they use `Arc`?
+        loop {
+            if let Message::Text(msg) = self.client.recv().await? {
+                let response = StreamedResponse::from_string(&msg)?;
+                self.responses.insert(response.id, response.response);
+                if let Some(response) = self.responses.remove(&response.id) {
+                    return Ok(response);
+                }
+            } else {
+                return Err(WrongFieldsError::new().into()); // TODO: not the best error
+            }
+        }
     }
 }
