@@ -47,13 +47,16 @@ pub trait ParseResponse: Sized {
         Ok(Self::from_json(&serde_json::from_str::<Value>(s)?)?)
     }
     fn parse_error(result: &serde_json::Map<String, Value>) -> Result<(), ParseResponseError> {
-        if result.get("status") == Some(&Value::String(ERROR_KEY.clone())) {
+        let status = result.get("status");
+        if status == Some(&Value::String(ERROR_KEY.clone())) {
             let error_code = result
                 .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
                 .as_str().ok_or::<ParseResponseError>(WrongFieldsError::new().into())?;
             Err(XrpError::new(error_code.to_owned()).into())
-        } else {
+        } else if status == Some(&Value::String(SUCCESS_KEY.clone())) {
             Ok(())
+        } else {
+            Err(WrongFieldsError::new().into())
         }
     }
 }
@@ -151,7 +154,6 @@ impl XrpError {
 /// For JSON RPC.
 pub struct Response {
     pub result: serde_json::Map<String, Value>,
-    pub success: bool,
     pub load: bool,
     // TODO: `warnings`
     pub forwarded: bool,
@@ -159,7 +161,6 @@ pub struct Response {
 
 pub struct TypedResponse<T> {
     pub result: T,
-    pub success: bool,
     pub load: bool,
     // TODO: `warnings`
     pub forwarded: bool,
@@ -169,7 +170,6 @@ impl<T: From<serde_json::Map<String, Value>>> From<Response> for TypedResponse<T
     fn from(value: Response) -> Self {
         Self {
             result: value.result.into(),
-            success: value.success,
             load: value.load,
             forwarded: value.forwarded,
         }
@@ -191,7 +191,6 @@ impl<'a> ParseResponse for Response {
         Self::parse_error(result)?;
         Ok(Response {
             result: result.clone(),
-            success: result.get("status") == Some(&Value::String(SUCCESS_KEY.clone())),
             load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
             forwarded: value.get("forwarded") == Some(&Value::Bool(true)),
         })
@@ -205,7 +204,6 @@ impl<'a> ParseResponse for StreamedResponse {
         Self::parse_error(&result)?;
         let response = Response {
             result,
-            success: value.get("status") == Some(&Value::String(SUCCESS_KEY.clone())),
             load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
             forwarded: value.get("forwarded") == Some(&Value::Bool(true)),
         };

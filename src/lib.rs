@@ -1,5 +1,3 @@
-extern crate core;
-
 pub mod address;
 pub mod connection;
 pub mod account;
