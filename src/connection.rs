@@ -36,15 +36,15 @@ pub trait ParseResponse: Sized {
 
 /// For JSON RPC.
 pub struct Request<'a> {
-    command: &'a str,
-    api_version: Option<u32>,
-    params: serde_json::Map<String, Value>,
+    pub command: &'a str,
+    pub api_version: Option<u32>,
+    pub params: serde_json::Map<String, Value>,
 }
 
 /// For WebSocket.
 pub struct StreamedRequest<'a> {
-    request: Request<'a>,
-    id: u64,
+    pub request: Request<'a>,
+    pub id: u64,
 }
 
 lazy_static! {
@@ -88,17 +88,17 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
 
 /// For JSON RPC.
 pub struct Response {
-    result: Value,
-    success: bool,
-    load: bool,
+    pub result: Value,
+    pub success: bool,
+    pub load: bool,
     // TODO: `warnings`
-    forwarded: bool,
+    pub forwarded: bool,
 }
 
 /// For WebSocket.
 pub struct StreamedResponse {
-    response: Response,
-    id: u64,
+    pub response: Response,
+    pub id: u64,
     // TODO: `type`
 }
 
