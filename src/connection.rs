@@ -1,5 +1,7 @@
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::sync::Arc;
+use fragile::Fragile;
 use derive_more::From;
 use lazy_static::lazy_static;
 use serde_json::{Number, Value, json};
@@ -139,7 +141,7 @@ impl<'a> ParseResponse for StreamedResponse {
 /// `E` is error
 #[async_trait]
 pub trait Api<E> {
-    async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, E>;
+    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, E>;
 }
 
 pub struct JsonRpcApi {
@@ -177,7 +179,7 @@ impl From<serde_json::Error> for JsonRpcApiError {
 #[async_trait]
 impl Api<JsonRpcApiError> for JsonRpcApi {
     #[allow(clippy::needless_lifetimes)]
-    async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
+    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
             .body(request.to_string()?)
             .send().await?;
@@ -187,24 +189,24 @@ impl Api<JsonRpcApiError> for JsonRpcApi {
 
 pub struct WebSocketApi {
     client: WebSocket,
-    responses: HashMap<u64, Response>,
-    id: u64,
+    responses: Fragile<RefCell<HashMap<u64, Response>>>,
+    id: Fragile<Cell<u64>>,
 }
 
 impl WebSocketApi {
     pub fn new(client: WebSocket) -> Self {
         Self {
             client,
-            responses: HashMap::new(),
-            id: 0,
+            responses: Fragile::new(RefCell::new(HashMap::new())),
+            id: Fragile::new(Cell::new(0)),
         }
     }
 }
 
 #[derive(Debug, From)]
 pub enum WebSocketApiError {
-    WebSocket(workflow_websocket::client::Error),
-    WebSocket2(Arc<workflow_websocket::client::Error>),
+    WebSocketFail(workflow_websocket::client::Error),
+    WebSocketFail2(Arc<workflow_websocket::client::Error>),
     Parse(ParseResponseError),
 }
 
@@ -223,25 +225,86 @@ impl From<serde_json::Error> for WebSocketApiError {
 #[async_trait]
 impl Api<WebSocketApiError> for WebSocketApi {
     #[allow(clippy::needless_lifetimes)]
-    async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, WebSocketApiError> {
-        let id = self.id;
-        self.id += 1;
-        let full_request = StreamedRequest {
-            id,
-            request,
-        };
+    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, WebSocketApiError> {
+        let _waiter = WebSocketMessageWaiterWithoutDrop::create(self, request).await;
         // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
-        self.client.send(full_request.to_string()?.into()).await?; // Why do they use `Arc`?
         loop {
             if let Message::Text(msg) = self.client.recv().await? {
                 let response = StreamedResponse::from_string(&msg)?;
-                self.responses.insert(response.id, response.response);
-                if let Some(response) = self.responses.remove(&response.id) {
+                // TODO: Check `unsafe`s again.
+                unsafe { &mut *self.responses.get().as_ptr() }.insert(response.id, response.response);
+                if let Some(response) = unsafe { &mut *self.responses.get().as_ptr() }.remove(&response.id) {
                     return Ok(response);
                 }
             } else {
                 return Err(WrongFieldsError::new().into()); // TODO: not the best error
             }
         }
+    }
+}
+
+struct WebSocketMessageWaiterWithoutDrop<'a> {
+    api: &'a WebSocketApi,
+    id: u64,
+}
+
+impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
+    pub async fn create(api: &'a WebSocketApi, request: Request<'a>)
+        -> Result<WebSocketMessageWaiterWithoutDrop<'a>, WebSocketApiError>
+    {
+        let id = api.id.get().get();
+        api.id.get().set(id + 1);
+        let full_request = StreamedRequest {
+            id,
+            request,
+        };
+        // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
+        api.client.send(full_request.to_string()?.into()).await?; // Why do they use `Arc`?
+        Ok(Self {
+            id,
+            api,
+        })
+    }
+}
+
+pub struct WebSocketMessageWaiter<'a>(WebSocketMessageWaiterWithoutDrop<'a>);
+
+impl<'a> WebSocketMessageWaiter<'a> {
+    pub async fn create(api: &'a WebSocketApi, request: Request<'a>)
+        -> Result<WebSocketMessageWaiter<'a>, WebSocketApiError>
+    {
+        Ok(Self(WebSocketMessageWaiterWithoutDrop::create(api, request).await?))
+    }
+}
+
+impl<'a> Drop for WebSocketMessageWaiter<'a> {
+    fn drop(&mut self) {
+        // TODO: Check `unsafe` again.
+        unsafe { &mut *self.0.api.responses.get().as_ptr() }.remove(&self.0.id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Check that we can acquire two waiters at once.
+    // #[test]
+    #[allow(unused)]
+    fn two_waiters() {
+        let websocket = WebSocket::new("ws://example.com", workflow_websocket::client::Options::default()).unwrap();
+        let api = WebSocketApi::new(websocket);
+        let _waiter1 =
+            WebSocketMessageWaiter::create(&api, Request {
+                command: "test",
+                api_version: None,
+                params: serde_json::Map::new(),
+            });
+        let _waiter2 =
+            WebSocketMessageWaiter::create(&api, Request {
+                command: "test",
+                api_version: None,
+                params: serde_json::Map::new(),
+            });
     }
 }
