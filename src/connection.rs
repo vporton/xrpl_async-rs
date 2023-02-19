@@ -46,7 +46,7 @@ pub trait ParseResponse: Sized {
     fn from_string(s: &str) -> Result<Self, ParseResponseError> {
         Ok(Self::from_json(&serde_json::from_str::<Value>(s)?)?)
     }
-    fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
+    fn parse_error(result: &serde_json::Map<String, Value>) -> Result<(), ParseResponseError> {
         if result.get("status") == Some(&Value::String(ERROR_KEY.clone())) {
             let error_code = result
                 .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
@@ -58,7 +58,6 @@ pub trait ParseResponse: Sized {
     }
 }
 
-/// For JSON RPC.
 #[derive(Clone)]
 pub struct Request<'a> {
     pub command: &'a str,
@@ -66,10 +65,30 @@ pub struct Request<'a> {
     pub params: serde_json::Map<String, Value>,
 }
 
+/// For JSON RPC.
+#[derive(Clone)]
+pub struct TypedRequest<'a, T> {
+    pub command: &'a str,
+    pub api_version: Option<u32>,
+    pub data: T,
+}
+
+impl<'a, T: Into<serde_json::Map<String, Value>>> From<TypedRequest<'a, T>> for Request<'a>
+{
+    fn from(value: TypedRequest<'a, T>) -> Self {
+        Self {
+            command: value.command,
+            api_version: value.api_version,
+            params: value.data.into(),
+        }
+    }
+}
+
 /// For WebSocket.
+/// TODO: `pub`?
 pub struct StreamedRequest<'a> {
     pub request: Request<'a>,
-    pub id: u64,
+    pub id: u64, // TODO: `pub`?
 }
 
 lazy_static! {
@@ -131,11 +150,30 @@ impl XrpError {
 
 /// For JSON RPC.
 pub struct Response {
-    pub result: Value,
+    pub result: serde_json::Map<String, Value>,
     pub success: bool,
     pub load: bool,
     // TODO: `warnings`
     pub forwarded: bool,
+}
+
+pub struct TypedResponse<T> {
+    pub result: T,
+    pub success: bool,
+    pub load: bool,
+    // TODO: `warnings`
+    pub forwarded: bool,
+}
+
+impl<T: From<serde_json::Map<String, Value>>> From<Response> for TypedResponse<T> {
+    fn from(value: Response) -> Self {
+        Self {
+            result: value.result.into(),
+            success: value.success,
+            load: value.load,
+            forwarded: value.forwarded,
+        }
+    }
 }
 
 /// For WebSocket.
@@ -148,7 +186,7 @@ pub struct StreamedResponse {
 // TODO: Need to extract
 impl<'a> ParseResponse for Response {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        let result = value.get("result").ok_or(WrongFieldsError::new())?;
+        let result = value.get("result").ok_or(WrongFieldsError::new())?.as_object().ok_or(WrongFieldsError::new())?;
         // TODO: Implement without `clone`.
         Self::parse_error(result)?;
         Ok(Response {
@@ -163,7 +201,7 @@ impl<'a> ParseResponse for Response {
 impl<'a> ParseResponse for StreamedResponse {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
         // TODO: Implement without `clone`.
-        let result = value.get("result").ok_or(WrongFieldsError::new())?.clone();
+        let result = value.get("result").ok_or(WrongFieldsError::new())?.as_object().ok_or(WrongFieldsError::new())?.clone();
         Self::parse_error(&result)?;
         let response = Response {
             result,
@@ -350,7 +388,7 @@ impl<'a> Drop for WebSocketMessageWaiter<'a> {
 }
 
 pub trait PaginatorExtractor: ParseResponse + Unpin {
-    fn list_part(result: &Value) -> Vec<Value>;
+    fn list_part(result: &serde_json::Map<String, Value>) -> Vec<Value>;
 }
 
 pub struct Paginator<'a, A: Api, T: PaginatorExtractor> {
@@ -418,6 +456,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
     }
 }
 
+// TODO: Is it needed?
 #[async_trait]
 trait Paginated<Api, Element> {
     fn get_raw_list_one_page(result: &Value) -> &Vec<Value>;
