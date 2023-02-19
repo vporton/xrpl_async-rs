@@ -448,7 +448,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
                         } else {
                             Poll::Ready(None)
                         }
-                    }
+                    },
                     Poll::Pending => Poll::Pending,
                 }
             };
