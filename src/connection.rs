@@ -397,7 +397,7 @@ impl<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item =
                     Poll::Pending => Poll::Pending,
                 }
             };
-            if let Some(marker) = marker { // Can be done without `clone`?
+            if let Some(marker) = marker {
                 let mut request = this.request.clone();
                 request.params.insert(MARKER_KEY.clone(), marker);
                 load(&request)
