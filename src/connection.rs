@@ -176,6 +176,7 @@ impl From<serde_json::Error> for JsonRpcApiError {
 
 #[async_trait]
 impl Api<JsonRpcApiError> for JsonRpcApi {
+    #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
             .body(request.to_string()?)
@@ -221,6 +222,7 @@ impl From<serde_json::Error> for WebSocketApiError {
 
 #[async_trait]
 impl Api<WebSocketApiError> for WebSocketApi {
+    #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&mut self, request: Request<'a>) -> Result<Response, WebSocketApiError> {
         let id = self.id;
         self.id += 1;
