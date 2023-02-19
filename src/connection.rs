@@ -1,6 +1,8 @@
 use derive_more::From;
 use lazy_static::lazy_static;
 use serde_json::{Number, Value, json};
+use async_trait::async_trait;
+use reqwest::Client;
 
 #[derive(Debug)]
 pub struct WrongFieldsError;
@@ -128,5 +130,53 @@ impl<'a> ParseResponse for StreamedResponse {
             id: value.get("id").ok_or(WrongFieldsError::new())?.as_u64().ok_or(WrongFieldsError::new())?,
             response,
         })
+    }
+}
+
+/// `E` is error
+#[async_trait]
+pub trait Api<E> {
+    async fn call(&mut self, request: &Request) -> Result<Response, E>;
+}
+
+pub struct JsonRpcApi {
+    client: Client,
+    url: String,
+}
+
+impl JsonRpcApi {
+    pub fn new(client: Client, url: String) -> Self {
+        Self {
+            client,
+            url,
+        }
+    }
+}
+
+#[derive(Debug, From)]
+pub enum JsonRpcError {
+    Reqwest(reqwest::Error),
+    Parse(ParseResponseError),
+}
+
+impl From<WrongFieldsError> for JsonRpcError {
+    fn from(value: WrongFieldsError) -> Self {
+        Self::Parse(value.into())
+    }
+}
+
+impl From<serde_json::Error> for JsonRpcError {
+    fn from(value: serde_json::Error) -> Self {
+        Self::Parse(value.into())
+    }
+}
+
+#[async_trait]
+impl Api<JsonRpcError> for JsonRpcApi {
+    async fn call(&mut self, request: &Request) -> Result<Response, JsonRpcError> {
+        let result = self.client.get(&self.url).header("Content-Type", "application/json")
+            .body(request.to_string()?)
+            .send().await?;
+        Ok(Response::from_json(&result.json::<Value>().await?)?)
     }
 }
