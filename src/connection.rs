@@ -349,7 +349,7 @@ impl<'a> Drop for WebSocketMessageWaiter<'a> {
     }
 }
 
-pub struct Paginator<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> {
+pub struct Paginator<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item = T> + Unpin)> {
     api: &'a A,
     request: Request<'a>,
     f: Pin<Box<F>>,
@@ -358,7 +358,7 @@ pub struct Paginator<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Itera
     first_page: bool,
 }
 
-impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> Paginator<'a, A, T, F> {
+impl<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item = T> + Unpin)> Paginator<'a, A, T, F> {
     pub fn new(api: &'a A, request: Request<'a>, f: Pin<Box<F>>) -> Self {
         Self {
             api,
@@ -371,7 +371,7 @@ impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + 
     }
 }
 
-impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> Stream for Paginator<'a, A, T, F> {
+impl<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item = T> + Unpin)> Stream for Paginator<'a, A, T, F> {
     type Item = Result<T, A::Error>;
     fn poll_next(
         self: Pin<&mut Self>,
