@@ -349,21 +349,23 @@ impl<'a> Drop for WebSocketMessageWaiter<'a> {
     }
 }
 
-pub struct Paginator<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item = T> + Unpin)> {
+pub trait PaginatorExtractor: ParseResponse + Unpin {
+    fn list_part(result: &Value) -> Vec<Value>;
+}
+
+pub struct Paginator<'a, A: Api, T: PaginatorExtractor> {
     api: &'a A,
     request: Request<'a>,
-    f: Pin<Box<F>>,
     list: VecDeque<T>, // more efficient than `Vec`
     marker: Option<Value>,
     first_page: bool,
 }
 
-impl<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item = T> + Unpin)> Paginator<'a, A, T, F> {
-    pub fn new(api: &'a A, request: Request<'a>, f: Pin<Box<F>>) -> Self {
+impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T> {
+    pub fn new(api: &'a A, request: Request<'a>) -> Self {
         Self {
             api,
             request,
-            f,
             list: VecDeque::new(),
             marker: None,
             first_page: true,
@@ -371,7 +373,9 @@ impl<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item =
     }
 }
 
-impl<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item = T> + Unpin)> Stream for Paginator<'a, A, T, F> {
+impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
+    where A::Error: From<ParseResponseError>
+{
     type Item = Result<T, A::Error>;
     fn poll_next(
         self: Pin<&mut Self>,
@@ -386,7 +390,8 @@ impl<'a, A: Api, T: Unpin + 'a, F: Fn(&Response) -> &'a mut (dyn Iterator<Item =
                 match this.api.call(request.clone()).as_mut().poll(cx) { // Think, if clone can be removed here.
                     Poll::Ready(val) => {
                         let val = val?;
-                        this.list = (this.f)(&val).into_iter().collect();
+                        this.list = T::list_part(&val.result).iter().map(|e| T::from_json(e))
+                            .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
                         this.marker = val.result.get(&*MARKER_KEY).map(|v| v.clone());
                         if let Some(front) = this.list.pop_front() {
                             Poll::Ready(Some(Ok(front)))
