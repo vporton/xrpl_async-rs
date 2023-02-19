@@ -418,12 +418,11 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
         cx: &mut Context<'_>
     ) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
-        let mut load: bool = false;
         let mut forwarded: bool = false;
         if let Some(front) = this.list.pop_front() {
             Poll::Ready(Some(Ok(TypedResponse {
                 result: front.into(),
-                load,
+                load: false, // Loading non-first item in the list does not load the server.
                 forwarded,
             })))
         } else {
@@ -432,7 +431,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
                 match this.api.call(request.clone()).as_mut().poll(cx) { // Think, if clone can be removed here.
                     Poll::Ready(response) => {
                         let response = response?;
-                        load = response.load;
+                        let load = response.load;
                         forwarded = response.forwarded;
                         this.list = T::list_part(&response.result).iter().map(|e| T::from_json(e))
                             .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
@@ -441,7 +440,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
                             Poll::Ready(Some(Ok(
                                 TypedResponse {
                                     result: front.into(),
-                                    load,
+                                    load, // for the first item in the downloaded list
                                     forwarded,
                                 }
                             )))
