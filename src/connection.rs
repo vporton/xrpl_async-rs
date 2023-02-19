@@ -226,23 +226,15 @@ impl From<serde_json::Error> for WebSocketApiError {
 impl Api<WebSocketApiError> for WebSocketApi {
     #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, WebSocketApiError> {
-        let _waiter = WebSocketMessageWaiterWithoutDrop::create(self, request).await;
-        // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
-        loop {
-            if let Message::Text(msg) = self.client.recv().await? {
-                let response = StreamedResponse::from_string(&msg)?;
-                // TODO: Check `unsafe`s again.
-                unsafe { &mut *self.responses.get().as_ptr() }.insert(response.id, response.response);
-                if let Some(response) = unsafe { &mut *self.responses.get().as_ptr() }.remove(&response.id) {
-                    return Ok(response);
-                }
-            } else {
-                return Err(WrongFieldsError::new().into()); // TODO: not the best error
-            }
-        }
+        let waiter =
+            WebSocketMessageWaiterWithoutDrop::create(self, request).await?;
+        waiter.wait().await
     }
 }
 
+/// Usually you should use `WebSocketMessageWaiter` instead,
+/// because this struct does not free memory automatically.
+/// The memory allocated by `create` can be freed by `do_drop`.
 struct WebSocketMessageWaiterWithoutDrop<'a> {
     api: &'a WebSocketApi,
     id: u64,
@@ -265,8 +257,30 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             api,
         })
     }
+    pub async fn wait(&self) -> Result<Response, WebSocketApiError> {
+        loop {
+            // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
+            if let Message::Text(msg) = self.api.client.recv().await? {
+                let response = StreamedResponse::from_string(&msg)?;
+                // TODO: Check `unsafe`s again.
+                unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.response);
+                if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
+                    return Ok(response);
+                }
+            } else {
+                return Err(WrongFieldsError::new().into()); // TODO: not the best error
+            }
+        }
+
+    }
+    pub fn do_drop(&mut self) {
+        // TODO: Check `unsafe` again.
+        unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&self.id);
+    }
 }
 
+/// Wait (by calling `wait` method) for WebSocket response for request passed to `create`
+/// while this object exists. Free memory, when the object drops.
 pub struct WebSocketMessageWaiter<'a>(WebSocketMessageWaiterWithoutDrop<'a>);
 
 impl<'a> WebSocketMessageWaiter<'a> {
@@ -275,12 +289,14 @@ impl<'a> WebSocketMessageWaiter<'a> {
     {
         Ok(Self(WebSocketMessageWaiterWithoutDrop::create(api, request).await?))
     }
+    pub async fn wait(&self) -> Result<Response, WebSocketApiError> {
+        self.0.wait().await
+    }
 }
 
 impl<'a> Drop for WebSocketMessageWaiter<'a> {
     fn drop(&mut self) {
-        // TODO: Check `unsafe` again.
-        unsafe { &mut *self.0.api.responses.get().as_ptr() }.remove(&self.0.id);
+        self.0.do_drop();
     }
 }
 
