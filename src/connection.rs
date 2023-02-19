@@ -356,24 +356,22 @@ struct Paginator<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<
     // position: usize,
     marker: Option<Value>,
     f: Pin<Box<F>>,
+    first_page: bool,
 }
 
 impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> Stream for Paginator<'a, A, T, F> {
-    /// TODO: More special error?
     type Item = Result<T, A::Error>;
     fn poll_next(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>
     ) -> Poll<Option<Self::Item>> {
-        // FIXME: Check edge cases.
         let this = self.get_mut();
         if let Some(front) = this.list.pop_front() {
             Poll::Ready(Some(Ok(front)))
         } else {
-            if let Some(marker) = this.marker.clone() { // Can be done without `clone`?
-                let mut request = this.request.clone();
-                request.params.insert(MARKER_KEY.clone(), marker);
-                match this.api.call(request).as_mut().poll(cx) {
+            let marker = this.marker.clone();
+            let mut load = |request: &Request| {
+                match this.api.call(request.clone()).as_mut().poll(cx) { // Think, if clone can be removed here.
                     Poll::Ready(val) => {
                         let val = val?;
                         this.list = (this.f)(&val).into_iter().collect();
@@ -386,8 +384,18 @@ impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + 
                     },
                     Poll::Pending => Poll::Pending,
                 }
+            };
+            if let Some(marker) = marker { // Can be done without `clone`?
+                let mut request = this.request.clone();
+                request.params.insert(MARKER_KEY.clone(), marker);
+                load(&request)
             } else {
-                Poll::Ready(None)
+                if this.first_page {
+                    let request = this.request.clone();
+                    load(&request)
+                } else {
+                    Poll::Ready(None)
+                }
             }
         }
     }
