@@ -428,7 +428,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
             })))
         } else {
             let marker = this.marker.clone();
-            let mut load = |request: &Request| {
+            let mut loader = |request: &Request| {
                 match this.api.call(request.clone()).as_mut().poll(cx) { // Think, if clone can be removed here.
                     Poll::Ready(response) => {
                         let response = response?;
@@ -455,11 +455,11 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
             if let Some(marker) = marker {
                 let mut request = this.request.clone();
                 request.params.insert(MARKER_KEY.clone(), marker);
-                load(&request)
+                loader(&request)
             } else {
                 if this.first_page {
                     let request = this.request.clone();
-                    load(&request)
+                    loader(&request)
                 } else {
                     Poll::Ready(None)
                 }
