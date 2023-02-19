@@ -42,10 +42,10 @@ pub trait ParseResponse: Sized {
     }
     fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
         if result.get("status") == Some(&Value::String(ERROR_KEY.clone())) {
-            let text_code = result
+            let error_code = result
                 .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
                 .as_str().ok_or::<ParseResponseError>(WrongFieldsError::new().into())?;
-            Err(XrpError::new(text_code.to_owned()).into())
+            Err(XrpError::new(error_code.to_owned()).into())
         } else {
             Ok(())
         }
@@ -107,17 +107,17 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
 
 #[derive(Debug)]
 pub struct XrpError {
-    text_code: String,
+    error_code: String,
 }
 
 impl XrpError {
-    pub fn new(text_code: String) -> Self {
+    pub fn new(error_code: String) -> Self {
         Self {
-            text_code,
+            error_code,
         }
     }
-    pub fn text_code(self) -> String {
-        self.text_code
+    pub fn error_code(self) -> String {
+        self.error_code
     }
 }
 
