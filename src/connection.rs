@@ -1,5 +1,21 @@
+use derive_more::From;
 use lazy_static::lazy_static;
 use serde_json::{Number, Value, json};
+
+#[derive(Debug)]
+pub struct WrongFieldsError;
+
+impl WrongFieldsError {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[derive(Debug, From)]
+pub enum ParseResponseError {
+    Json(serde_json::Error),
+    WrongFields(WrongFieldsError),
+}
 
 pub trait FormatRequest {
     fn to_json(&self) -> Value;
@@ -8,6 +24,13 @@ pub trait FormatRequest {
     }
     fn to_string_pretty(&self) -> serde_json::Result<String> {
         serde_json::to_string_pretty(&self.to_json())
+    }
+}
+
+pub trait ParseResponse: Sized {
+    fn from_json(value: &Value) -> Result<Self, WrongFieldsError>;
+    fn from_string(s: &str) -> Result<Self, ParseResponseError> {
+        Ok(Self::from_json(&serde_json::from_str::<Value>(s)?)?)
     }
 }
 
@@ -28,6 +51,8 @@ lazy_static! {
     static ref API_VERSION_KEY: String = "api_version".to_string();
     static ref ID_KEY: String = "id".to_string();
     static ref COMMAND_KEY: String = "command".to_string();
+    static ref LOAD_KEY: String = "load".to_string();
+    static ref SUCCESS_KEY: String = "success".to_string();
 }
 
 impl<'a> FormatRequest for Request<'a> {
@@ -58,5 +83,50 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
             params[key] = value.to_owned();
         }
         json!(params)
+    }
+}
+
+/// For JSON RPC.
+pub struct Response {
+    result: Value,
+    success: bool,
+    load: bool,
+    // TODO: `warnings`
+    forwarded: bool,
+}
+
+/// For WebSocket.
+pub struct StreamedResponse {
+    response: Response,
+    id: u64,
+    // TODO: `type`
+}
+
+impl<'a> ParseResponse for Response {
+    fn from_json(value: &Value) -> Result<Self, WrongFieldsError> {
+        let result = value.get("result").ok_or(WrongFieldsError::new())?;
+        // TODO: Implement without `clone`.
+        Ok(Response {
+            result: result.clone(),
+            success: result.get("status") == Some(&Value::String(SUCCESS_KEY.clone())),
+            load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
+            forwarded: value.get("forwarded") == Some(&Value::Bool(true)),
+        })
+    }
+}
+
+impl<'a> ParseResponse for StreamedResponse {
+    fn from_json(value: &Value) -> Result<Self, WrongFieldsError> {
+        // TODO: Implement without `clone`.
+        let response = Response {
+            result: value.get("result").ok_or(WrongFieldsError::new())?.clone(),
+            success: value.get("status") == Some(&Value::String(SUCCESS_KEY.clone())),
+            load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
+            forwarded: value.get("forwarded") == Some(&Value::Bool(true)),
+        };
+        Ok(StreamedResponse {
+            id: value.get("id").ok_or(WrongFieldsError::new())?.as_u64().ok_or(WrongFieldsError::new())?,
+            response,
+        })
     }
 }

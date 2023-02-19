@@ -1,12 +1,22 @@
 use std::array::TryFromSliceError;
 use std::iter::once;
+// use derive::Debug;
 use derive_more::From;
 use base58check::{FromBase58Check, FromBase58CheckError, ToBase58Check};
 
-#[derive(From)]
+#[derive(Debug)]
+pub struct WrongPrefixError;
+
+impl WrongPrefixError {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[derive(Debug, From)]
 pub enum FromXRPDecodingError {
     FromBase58Check(FromBase58CheckError),
-    WrongPrefix,
+    WrongPrefix(WrongPrefixError),
     WrongLength(TryFromSliceError),
 }
 
@@ -41,7 +51,7 @@ impl<
     pub fn decode(s: String) -> Result<Self, FromXRPDecodingError> {
         let (prefix, bytes) = s.from_base58check()?;
         if prefix != Self::TYPE_PREFIX {
-            return Err(FromXRPDecodingError::WrongPrefix).into();
+            return Err(WrongPrefixError::new().into());
         }
         Ok(Self::from_bytes_without_prefix(bytes.as_slice().try_into()?))
     }
