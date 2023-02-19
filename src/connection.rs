@@ -22,6 +22,7 @@ impl WrongFieldsError {
 pub enum ParseResponseError {
     Json(serde_json::Error),
     WrongFields(WrongFieldsError),
+    Xrp(XrpError),
 }
 
 pub trait FormatRequest {
@@ -35,9 +36,19 @@ pub trait FormatRequest {
 }
 
 pub trait ParseResponse: Sized {
-    fn from_json(value: &Value) -> Result<Self, WrongFieldsError>;
+    fn from_json(value: &Value) -> Result<Self, ParseResponseError>;
     fn from_string(s: &str) -> Result<Self, ParseResponseError> {
         Ok(Self::from_json(&serde_json::from_str::<Value>(s)?)?)
+    }
+    fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
+        if result.get("status") == Some(&Value::String(ERROR_KEY.clone())) {
+            let text_code = result
+                .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
+                .as_str().ok_or::<ParseResponseError>(WrongFieldsError::new().into())?;
+            Err(XrpError::new(text_code.to_owned()).into())
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -60,6 +71,7 @@ lazy_static! {
     static ref COMMAND_KEY: String = "command".to_string();
     static ref LOAD_KEY: String = "load".to_string();
     static ref SUCCESS_KEY: String = "success".to_string();
+    static ref ERROR_KEY: String = "error".to_string();
 }
 
 impl<'a> FormatRequest for Request<'a> {
@@ -93,6 +105,22 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
     }
 }
 
+#[derive(Debug)]
+pub struct XrpError {
+    text_code: String,
+}
+
+impl XrpError {
+    pub fn new(text_code: String) -> Self {
+        Self {
+            text_code,
+        }
+    }
+    pub fn text_code(self) -> String {
+        self.text_code
+    }
+}
+
 /// For JSON RPC.
 pub struct Response {
     pub result: Value,
@@ -109,10 +137,12 @@ pub struct StreamedResponse {
     // TODO: `type`
 }
 
+// TODO: Need to extract
 impl<'a> ParseResponse for Response {
-    fn from_json(value: &Value) -> Result<Self, WrongFieldsError> {
+    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
         let result = value.get("result").ok_or(WrongFieldsError::new())?;
         // TODO: Implement without `clone`.
+        Self::parse_error(result)?;
         Ok(Response {
             result: result.clone(),
             success: result.get("status") == Some(&Value::String(SUCCESS_KEY.clone())),
@@ -123,10 +153,12 @@ impl<'a> ParseResponse for Response {
 }
 
 impl<'a> ParseResponse for StreamedResponse {
-    fn from_json(value: &Value) -> Result<Self, WrongFieldsError> {
+    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
         // TODO: Implement without `clone`.
+        let result = value.get("result").ok_or(WrongFieldsError::new())?.clone();
+        Self::parse_error(&result)?;
         let response = Response {
-            result: value.get("result").ok_or(WrongFieldsError::new())?.clone(),
+            result,
             success: value.get("status") == Some(&Value::String(SUCCESS_KEY.clone())),
             load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
             forwarded: value.get("forwarded") == Some(&Value::Bool(true)),
