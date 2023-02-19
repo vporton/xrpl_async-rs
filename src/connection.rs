@@ -6,8 +6,9 @@ use derive_more::From;
 use lazy_static::lazy_static;
 use serde_json::{Number, Value, json};
 use async_trait::async_trait;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use workflow_websocket::client::{Message, WebSocket};
+use crate::connection::ParseResponseError::HttpStatus;
 
 #[derive(Debug)]
 pub struct WrongFieldsError;
@@ -23,6 +24,8 @@ pub enum ParseResponseError {
     Json(serde_json::Error),
     WrongFields(WrongFieldsError),
     Xrp(XrpError),
+    /// It may be 503 for rate limited or other HTTP status code.
+    HttpStatus(StatusCode),
 }
 
 pub trait FormatRequest {
@@ -215,6 +218,9 @@ impl Api<JsonRpcApiError> for JsonRpcApi {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
             .body(request.to_string()?)
             .send().await?;
+        if !result.status().is_success() {
+            return Err(HttpStatus(result.status()).into());
+        }
         Ok(Response::from_json(&result.json::<Value>().await?)?)
     }
 }
