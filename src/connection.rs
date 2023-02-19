@@ -1,6 +1,9 @@
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
+use tokio_stream::Stream;
 use fragile::Fragile;
 use derive_more::From;
 use lazy_static::lazy_static;
@@ -56,6 +59,7 @@ pub trait ParseResponse: Sized {
 }
 
 /// For JSON RPC.
+#[derive(Clone)]
 pub struct Request<'a> {
     pub command: &'a str,
     pub api_version: Option<u32>,
@@ -75,6 +79,7 @@ lazy_static! {
     static ref LOAD_KEY: String = "load".to_string();
     static ref SUCCESS_KEY: String = "success".to_string();
     static ref ERROR_KEY: String = "error".to_string();
+    static ref MARKER_KEY: String = "marker".to_string();
 }
 
 impl<'a> FormatRequest for Request<'a> {
@@ -175,8 +180,9 @@ impl<'a> ParseResponse for StreamedResponse {
 
 /// `E` is error
 #[async_trait]
-pub trait Api<E> {
-    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, E>;
+pub trait Api {
+    type Error;
+    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, Self::Error>;
 }
 
 pub struct JsonRpcApi {
@@ -212,7 +218,8 @@ impl From<serde_json::Error> for JsonRpcApiError {
 }
 
 #[async_trait]
-impl Api<JsonRpcApiError> for JsonRpcApi {
+impl Api for JsonRpcApi {
+    type Error = JsonRpcApiError;
     #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
@@ -263,7 +270,9 @@ impl From<serde_json::Error> for WebSocketApiError {
 }
 
 #[async_trait]
-impl Api<WebSocketApiError> for WebSocketApi {
+impl Api for WebSocketApi {
+    type Error = WebSocketApiError;
+
     #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, WebSocketApiError> {
         let waiter =
@@ -338,6 +347,64 @@ impl<'a> Drop for WebSocketMessageWaiter<'a> {
     fn drop(&mut self) {
         self.0.do_drop();
     }
+}
+
+struct Paginator<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> {
+    api: &'a A,
+    request: Request<'a>,
+    list: VecDeque<T>, // more efficient than `Vec`
+    // position: usize,
+    marker: Option<Value>,
+    f: Pin<Box<F>>,
+}
+
+impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> Stream for Paginator<'a, A, T, F> {
+    /// TODO: More special error?
+    type Item = Result<T, A::Error>;
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>
+    ) -> Poll<Option<Self::Item>> {
+        // FIXME: Check edge cases.
+        let this = self.get_mut();
+        if let Some(front) = this.list.pop_front() {
+            Poll::Ready(Some(Ok(front)))
+        } else {
+            if let Some(marker) = this.marker.clone() { // Can be done without `clone`?
+                let mut request = this.request.clone();
+                request.params.insert(MARKER_KEY.clone(), marker);
+                match this.api.call(request).as_mut().poll(cx) {
+                    Poll::Ready(val) => {
+                        let val = val?;
+                        this.list = (this.f)(&val).into_iter().collect();
+                        this.marker = val.result.get(&*MARKER_KEY).map(|v| v.clone());
+                        if let Some(front) = this.list.pop_front() {
+                            Poll::Ready(Some(Ok(front)))
+                        } else {
+                            Poll::Ready(None)
+                        }
+                    },
+                    Poll::Pending => Poll::Pending,
+                }
+            } else {
+                Poll::Ready(None)
+            }
+        }
+    }
+}
+
+#[async_trait]
+trait Paginated<Api, Element> {
+    fn get_raw_list_one_page(result: &Value) -> &Vec<Value>;
+    fn parse_element(e: &Value) -> Element;
+    fn get_list_one_page(result: &Value) -> Vec<Element> {
+        Self::get_raw_list_one_page(result).into_iter().map(|e| Self::parse_element(e)).collect()
+    }
+    // FIXME
+    // async fn get_full_list(api: &Api, request: Request<'async_trait>) {
+    //     let result = api.call(request).await?;
+    //     yield from get_list_one_page(&result);
+    // }
 }
 
 #[cfg(test)]
