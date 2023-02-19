@@ -349,14 +349,26 @@ impl<'a> Drop for WebSocketMessageWaiter<'a> {
     }
 }
 
-struct Paginator<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> {
+pub struct Paginator<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> {
     api: &'a A,
     request: Request<'a>,
-    list: VecDeque<T>, // more efficient than `Vec`
-    // position: usize,
-    marker: Option<Value>,
     f: Pin<Box<F>>,
+    list: VecDeque<T>, // more efficient than `Vec`
+    marker: Option<Value>,
     first_page: bool,
+}
+
+impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> Paginator<'a, A, T, F> {
+    pub fn new(api: &'a A, request: Request<'a>, f: Pin<Box<F>>) -> Self {
+        Self {
+            api,
+            request,
+            f,
+            list: VecDeque::new(),
+            marker: None,
+            first_page: true,
+        }
+    }
 }
 
 impl<'a, A: Api, T: Unpin, F: Fn(&Response) -> Pin<Box<dyn Iterator<Item = T> + Unpin>>> Stream for Paginator<'a, A, T, F> {
