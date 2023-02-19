@@ -225,6 +225,7 @@ impl Api<JsonRpcApiError> for JsonRpcApi {
     }
 }
 
+// TODO: Handling server-side disconnection (e.g. on rate-limiting).
 // TODO: Is this efficient?
 pub struct WebSocketApi {
     client: WebSocket,
