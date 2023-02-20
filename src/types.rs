@@ -1,6 +1,5 @@
 use std::array::TryFromSliceError;
-use std::cmp::max;
-use std::iter::repeat;
+use std::iter::{once, repeat};
 use std::num::ParseIntError;
 use hex::{decode, FromHexError};
 use derive_more::From;
@@ -34,23 +33,7 @@ pub fn decode_xrp_amount(s: &str) -> Result<u64, ParseIntError> {
     s.parse::<u64>()
 }
 
-const TOKEN_DIGITS: usize = 6;
-
-pub fn encode_token_amount(amount: u64) -> String {
-    let mut s = amount.to_string();
-    // The following is presumably a little slow...
-    // while s.len() < TOKEN_DIGITS + 1 { // at least one digit before the dot
-    //     s = ["0", &s].concat();
-    // }
-    // ... so iterator magic
-    if s.len() < TOKEN_DIGITS + 1 { // at least one digit before the dot
-        s = repeat('0').take(TOKEN_DIGITS + 1 - s.len()).chain(s.chars()).collect();
-    }
-    s.insert(s.len() - TOKEN_DIGITS, '.');
-    s
-        .trim_matches(&['0'] as &[_])
-        .trim_end_matches(&['.'] as &[_]).to_owned()
-}
+const XPR_DIGITS_AFTER_DOT: usize = 6;
 
 #[derive(Debug)]
 pub struct TokenAmountError;
@@ -61,25 +44,29 @@ impl TokenAmountError {
     }
 }
 
-pub fn decode_token_amount(s: &str) -> Result<u64, TokenAmountError> {
-    if s.chars().position(|c| c=='e' || c=='E').is_some() {
-        // TODO: better precision
-        let value = s.parse::<f64>().map_err(|_| TokenAmountError::new())?;
-        return Ok((value * 10u32.pow(TOKEN_DIGITS as u32) as f64).round() as u64);
+pub fn encode_token_amount(amount: f64) -> Result<String, TokenAmountError> {
+    if amount < -9999999999999999e80f64 || amount > 9999999999999999e80f64 {
+        return Err(TokenAmountError);
     }
-    if let Some(dot_pos) = s.chars().position(|c| c== '.') {
-        let mut s = s.to_owned();
-        let digits_after_dot = s.len() - dot_pos;
-        if digits_after_dot < TOKEN_DIGITS {
-            s = s.chars().chain(repeat('0').take(TOKEN_DIGITS - digits_after_dot)).collect();
-        }
-        s.remove(dot_pos);
-        s = s[.. max(digits_after_dot, TOKEN_DIGITS) - TOKEN_DIGITS].to_owned();
-        s.parse::<u64>()
-    } else {
-        s.parse::<u64>()
+    Ok(amount.to_string())
+}
+
+pub fn decode_token_amount(s: &str) -> Result<f64, TokenAmountError> {
+    s.parse::<f64>().map_err(|_| TokenAmountError::new())
+}
+
+pub fn xrp_to_human_representation(amount: u64) -> String {
+    let mut s = amount.to_string();
+    // Add zeros prefix:
+    if s.len() < XPR_DIGITS_AFTER_DOT + 1 { // at least one digit before the dot
+        s = repeat("0").take(XPR_DIGITS_AFTER_DOT + 1 - s.len()).chain(once(s.as_str()))
+            .flat_map(|s| s.chars()).collect();
     }
-        .map_err(|_| TokenAmountError::new())
+    assert!(s.len() > XPR_DIGITS_AFTER_DOT);
+    s.insert(s.len() - XPR_DIGITS_AFTER_DOT, '.');
+    s
+        .trim_matches(&['0'] as &[_])
+        .trim_end_matches(&['.'] as &[_]).to_owned()
 }
 
 // TODO: Unit tests.
