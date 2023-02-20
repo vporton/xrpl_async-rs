@@ -1,0 +1,1 @@
+- X-addresses: https://xrpl.org/basic-data-types.html
