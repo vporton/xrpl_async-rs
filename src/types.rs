@@ -52,8 +52,21 @@ pub fn encode_token_amount(amount: u64) -> String {
         .trim_end_matches(&['.'] as &[_]).to_owned()
 }
 
-/// FIXME: Support scientific notation
-pub fn decode_token_amount(s: &str) -> Result<u64, ParseIntError> {
+#[derive(Debug)]
+pub struct TokenAmountError;
+
+impl TokenAmountError {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+pub fn decode_token_amount(s: &str) -> Result<u64, TokenAmountError> {
+    if s.chars().position(|c| c=='e' || c=='E').is_some() {
+        // TODO: better precision
+        let value = s.parse::<f64>().map_err(|_| TokenAmountError::new())?;
+        return Ok((value * 10usize.pow(TOKEN_DIGITS as u32) as f64).round() as u64);
+    }
     if let Some(dot_pos) = s.chars().position(|c| c== '.') {
         let mut s = s.to_owned();
         let digits_after_dot = s.len() - dot_pos;
@@ -66,6 +79,7 @@ pub fn decode_token_amount(s: &str) -> Result<u64, ParseIntError> {
     } else {
         s.parse::<u64>()
     }
+        .map_err(|_| TokenAmountError::new())
 }
 
 // TODO: Unit tests.
