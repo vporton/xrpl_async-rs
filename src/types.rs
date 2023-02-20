@@ -65,7 +65,7 @@ pub fn decode_token_amount(s: &str) -> Result<u64, TokenAmountError> {
     if s.chars().position(|c| c=='e' || c=='E').is_some() {
         // TODO: better precision
         let value = s.parse::<f64>().map_err(|_| TokenAmountError::new())?;
-        return Ok((value * 10usize.pow(TOKEN_DIGITS as u32) as f64).round() as u64);
+        return Ok((value * 10u32.pow(TOKEN_DIGITS as u32) as f64).round() as u64);
     }
     if let Some(dot_pos) = s.chars().position(|c| c== '.') {
         let mut s = s.to_owned();
