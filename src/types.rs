@@ -4,6 +4,7 @@ use std::iter::repeat;
 use std::num::ParseIntError;
 use hex::{decode, FromHexError};
 use derive_more::From;
+use serde_json::{json, Value};
 
 pub struct Hash([u8; 32]);
 
@@ -68,3 +69,23 @@ pub fn decode_token_amount(s: &str) -> Result<u64, ParseIntError> {
 }
 
 // TODO: Unit tests.
+
+pub enum Ledger {
+    Index(u32),
+    Hash(Hash),
+    Validated,
+    Closed,
+    Current,
+}
+
+impl Ledger {
+    pub fn to_json(&self) -> (&str, Value) {
+        match self {
+            Ledger::Index(ind) => ("ledger_index", json!(ind)),
+            Ledger::Hash(hash) => ("ledger_hash", Value::String(hash.to_string())),
+            Ledger::Validated => ("ledger_index", Value::String("validated".to_owned())),
+            Ledger::Closed => ("ledger_index", Value::String("closed".to_owned())),
+            Ledger::Current => ("ledger_index", Value::String("current".to_owned())),
+        }
+    }
+}
