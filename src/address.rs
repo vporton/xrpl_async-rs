@@ -4,7 +4,6 @@ use std::iter::once;
 use derive_more::From;
 use base58check::{FromBase58Check, FromBase58CheckError, ToBase58Check};
 use hex::FromHexError;
-use crate::types::HexDecodeError;
 
 #[derive(Debug)]
 pub struct WrongPrefixError;
