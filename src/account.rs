@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use crate::address::Address;
+use crate::address::{AccountPublicKey, Address};
 use crate::connection::{FormatRequest, ParseResponse, ParseResponseError, WrongFieldsError};
 use crate::types::{Hash, Ledger};
 use crate::json::ValueExt;
@@ -45,7 +45,37 @@ impl ParseResponse for ChannelResponse {
 }
 
 pub struct ChannelPaginator {
+    pub account: Address,
+    pub amount: f64,
+    pub balance: f64,
+    pub channel_id: Hash,
+    pub destination_account: Address,
+    pub settle_delay: u64,
+    pub public_key: Option<AccountPublicKey>,
+    // pub public_key_hex: Option<AccountPublicKey>,
+    pub expiration: Option<u64>,
+    pub cancel_after: Option<u64>,
+    pub source_tag: Option<u32>,
+    pub destination_tag: Option<u32>,
+}
 
+impl ParseResponse for ChannelPaginator {
+    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
+        Ok(Self {
+            account: value.get_valid("account")?.as_address_valid()?,
+            amount: value.get_valid("amount")?.as_f64_valid()?,
+            balance: value.get_valid("balance")?.as_f64_valid()?,
+            channel_id: value.get_valid("channel_id")?.as_hash_valid()?,
+            destination_account: value.get_valid("destination_account")?.as_address_valid()?,
+            settle_delay: value.get_valid("settle_delay")?.as_u64_valid()?,
+            public_key: value.get("public_key").map(|s| -> Result<AccountPublicKey, WrongFieldsError> { Ok(AccountPublicKey::decode(s.as_str_valid()?).map_err(WrongFieldsError::new())?) })
+                .or(value.get("public_key_hex").map(|s| AccountPublicKey::decode_hex(s)?)),
+            expiration: value.get("expiration").map(|s| s.as_u64_valid()?),
+            cancel_after: value.get("cancel_after").map(|s| s.as_u64_valid()?),
+            source_tag: value.get("source_tag").map(|s| s.as_u32_valid()?),
+            destination_tag: value.get("destination_tag").map(|s| s.as_u32_valid()?),
+        })
+    }
 }
 
 // impl Paginator for ChannelPaginator {}

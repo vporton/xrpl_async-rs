@@ -3,6 +3,8 @@ use std::iter::once;
 // use derive::Debug;
 use derive_more::From;
 use base58check::{FromBase58Check, FromBase58CheckError, ToBase58Check};
+use hex::FromHexError;
+use crate::types::HexDecodeError;
 
 #[derive(Debug)]
 pub struct WrongPrefixError;
@@ -16,6 +18,7 @@ impl WrongPrefixError {
 #[derive(Debug, From)]
 pub enum FromXRPDecodingError {
     FromBase58Check(FromBase58CheckError),
+    Hex(FromHexError),
     WrongPrefix(WrongPrefixError),
     WrongLength(TryFromSliceError),
 }
@@ -48,12 +51,18 @@ impl<
     pub fn encode(&self) -> String {
         (&self.bytes_without_prefix() as &[u8]).to_base58check(Self::TYPE_PREFIX)
     }
-    pub fn decode(s: String) -> Result<Self, FromXRPDecodingError> {
+    pub fn decode(s: &str) -> Result<Self, FromXRPDecodingError> {
         let (prefix, bytes) = s.from_base58check()?;
         if prefix != Self::TYPE_PREFIX {
             return Err(WrongPrefixError::new().into());
         }
         Ok(Self::from_bytes_without_prefix(bytes.as_slice().try_into()?))
+    }
+    pub fn encode_hex(&self) -> String {
+        hex::encode_upper(self.0)
+    }
+    pub fn decode_hex(s: &str) -> Result<Self, FromXRPDecodingError> {
+        Ok(Self(hex::decode(s)?.as_slice().try_into()?))
     }
 }
 
