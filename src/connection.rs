@@ -389,23 +389,28 @@ pub trait PaginatorExtractor: ParseResponse + Unpin {
     fn list_part(result: &serde_json::Map<String, Value>) -> Vec<Value>;
 }
 
-pub struct Paginator<'a, A: Api, T: PaginatorExtractor> {
+pub struct Paginator<'a, A: Api, T: PaginatorExtractor> where A::Error: From<ParseResponseError> {
     api: &'a A,
     request: Request<'a>,
     list: VecDeque<T>, // more efficient than `Vec`
     marker: Option<Value>,
-    first_page: bool,
 }
 
-impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T> {
-    pub fn new(api: &'a A, request: Request<'a>) -> Self {
+impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T> where A::Error: From<ParseResponseError> {
+    fn new(api: &'a A, request: Request<'a>, first_page_list: VecDeque<T>) -> Self {
         Self {
             api,
             request,
-            list: VecDeque::new(),
+            list: first_page_list,
             marker: None,
-            first_page: true,
         }
+    }
+    pub async fn start(api: &'a A, request: Request<'a>) -> Result<(Response, Paginator<'a, A, T>), A::Error> {
+        let response = api.call(request.clone()).await?;
+        // TODO: Duplicate code:
+        let list = T::list_part(&response.result).iter().map(|e| T::from_json(e))
+            .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
+        Ok((response, Self::new(api, request, list)))
     }
 }
 
@@ -434,6 +439,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
                         let response = response?;
                         load = response.load;
                         forwarded = response.forwarded;
+                        // TODO: Duplicate code:
                         this.list = T::list_part(&response.result).iter().map(|e| T::from_json(e))
                             .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
                         this.marker = response.result.get(&*MARKER_KEY).map(|v| v.clone());
@@ -457,12 +463,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
                 request.params.insert(MARKER_KEY.clone(), marker);
                 loader(&request)
             } else {
-                if this.first_page {
-                    let request = this.request.clone();
-                    loader(&request)
-                } else {
-                    Poll::Ready(None)
-                }
+                Poll::Ready(None)
             }
         }
     }
