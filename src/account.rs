@@ -28,10 +28,10 @@ impl FormatRequest for ChannelsRequest {
     }
 }
 
-struct ChannelResponse {
-    ledger_hash: Option<Hash>,
-    ledger_index: Option<u32>,
-    validated: Option<bool>,
+pub struct ChannelResponse {
+    pub ledger_hash: Option<Hash>,
+    pub ledger_index: Option<u32>,
+    pub validated: Option<bool>,
 }
 
 impl ParseResponse for ChannelResponse {
@@ -44,7 +44,7 @@ impl ParseResponse for ChannelResponse {
     }
 }
 
-struct ChannelPaginator {
+pub struct ChannelPaginator {
 
 }
 
