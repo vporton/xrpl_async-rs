@@ -12,6 +12,7 @@ use async_trait::async_trait;
 use reqwest::{Client, StatusCode};
 use workflow_websocket::client::{Message, WebSocket};
 use crate::connection::ParseResponseError::HttpStatus;
+use crate::json::ValueExt;
 
 #[derive(Debug)]
 pub struct WrongFieldsError;
@@ -386,7 +387,11 @@ impl<'a> Drop for WebSocketMessageWaiter<'a> {
 }
 
 pub trait PaginatorExtractor: ParseResponse + Unpin {
-    fn list_part(result: &serde_json::Map<String, Value>) -> Vec<Value>;
+    // TODO: Rename the methods.
+    fn list_obj(result: &serde_json::Map<String, Value>) -> Result<&Value, WrongFieldsError>;
+    fn list_part(result: &serde_json::Map<String, Value>) -> Result<&Vec<Value>, WrongFieldsError> {
+        Ok(Self::list_obj(result)?.as_array_valid()?)
+    }
 }
 
 pub struct Paginator<'a, A: Api, T: PaginatorExtractor> where A::Error: From<ParseResponseError> {
@@ -396,7 +401,9 @@ pub struct Paginator<'a, A: Api, T: PaginatorExtractor> where A::Error: From<Par
     marker: Option<Value>,
 }
 
-impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T> where A::Error: From<ParseResponseError> {
+impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
+    where A::Error: From<ParseResponseError>, A::Error: From<WrongFieldsError> // TODO: Simplify.
+{
     fn new(api: &'a A, request: Request<'a>, first_page_list: VecDeque<T>) -> Self {
         Self {
             api,
@@ -408,14 +415,14 @@ impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T> where A::Error: From
     pub async fn start(api: &'a A, request: Request<'a>) -> Result<(Response, Paginator<'a, A, T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        let list = T::list_part(&response.result).iter().map(|e| T::from_json(e))
+        let list = T::list_part(&response.result).map_err(|_| WrongFieldsError::new())?.into_iter().map(|e| T::from_json(e))
             .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
         Ok((response, Self::new(api, request, list)))
     }
 }
 
 impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
-    where A::Error: From<ParseResponseError>
+    where A::Error: From<ParseResponseError>, A::Error: From<WrongFieldsError> // TODO
 {
     type Item = Result<TypedResponse<T>, A::Error>;
     fn poll_next(
@@ -440,7 +447,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
                         load = response.load;
                         forwarded = response.forwarded;
                         // TODO: Duplicate code:
-                        this.list = T::list_part(&response.result).iter().map(|e| T::from_json(e))
+                        this.list = T::list_part(&response.result)?.iter().map(|e| T::from_json(e))
                             .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
                         this.marker = response.result.get(&*MARKER_KEY).map(|v| v.clone());
                         if let Some(front) = this.list.pop_front() {

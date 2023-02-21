@@ -10,6 +10,7 @@ pub(crate) trait ValueExt {
     fn as_f64_valid(&self) -> Result<f64, WrongFieldsError>;
     fn as_u64_valid(&self) -> Result<u64, WrongFieldsError>;
     fn as_u32_valid(&self) -> Result<u32, WrongFieldsError>;
+    fn as_array_valid(&self) -> Result<&Vec<Value>, WrongFieldsError>;
     fn as_hash_valid(&self) -> Result<Hash, WrongFieldsError>;
     fn as_address_valid(&self) -> Result<Address, WrongFieldsError>;
 }
@@ -32,6 +33,9 @@ impl ValueExt for Value {
     }
     fn as_u32_valid(&self) -> Result<u32, WrongFieldsError> {
         Ok(self.as_u64_valid()?.try_into().map_err(|_| WrongFieldsError::new())?)
+    }
+    fn as_array_valid(&self) -> Result<&Vec<Value>, WrongFieldsError> {
+        Ok(self.as_array().ok_or(WrongFieldsError::new())?)
     }
     fn as_hash_valid(&self) -> Result<Hash, WrongFieldsError> {
         Ok(Hash::from_hex(self.as_str_valid()?).map_err(|_| WrongFieldsError::new())?)
