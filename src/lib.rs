@@ -1,7 +1,7 @@
 pub mod address;
 pub mod types;
 pub mod connection;
-// pub mod account;
+pub mod account;
 
 #[cfg(test)]
 mod tests {
