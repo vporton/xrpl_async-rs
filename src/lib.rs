@@ -1,3 +1,4 @@
+mod json;
 pub mod address;
 pub mod types;
 pub mod connection;

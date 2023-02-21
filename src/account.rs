@@ -2,6 +2,7 @@ use serde_json::{json, Value};
 use crate::address::Address;
 use crate::connection::{FormatRequest, ParseResponse, ParseResponseError, WrongFieldsError};
 use crate::types::{Hash, Ledger};
+use crate::json::ValueExt;
 
 struct ChannelsRequest {
     account: Address,
@@ -35,9 +36,11 @@ struct ChannelResponse {
 
 impl ParseResponse for ChannelResponse {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        ChannelResponse {
-            ledger_hash: value.get("ledger_hash").map(|s| s.as_ WrongFieldsError::new())?,
-        }
+        Ok(ChannelResponse {
+            ledger_hash: value.get("ledger_hash").map(|v| Ok::<_, WrongFieldsError>(v.as_hash_valid()?)).transpose()?,
+            ledger_index: value.get("ledger_index").map(|v| Ok::<_, WrongFieldsError>(v.as_u32_valid()?)).transpose()?,
+            validated: value.get("validated").map(|v| Ok::<_, WrongFieldsError>(v.as_bool_valid()?)).transpose()?,
+        })
     }
 }
 
