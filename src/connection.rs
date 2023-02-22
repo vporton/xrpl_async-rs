@@ -47,7 +47,7 @@ pub trait ParseResponse: Sized {
     fn from_string(s: &str) -> Result<Self, ParseResponseError> {
         Ok(Self::from_json(&serde_json::from_str::<Value>(s)?)?)
     }
-    fn parse_error(result: &serde_json::Map<String, Value>) -> Result<(), ParseResponseError> {
+    fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
         let status = result.get("status");
         if status == Some(&Value::String(ERROR_KEY.clone())) {
             let error_code = result
@@ -66,7 +66,7 @@ pub trait ParseResponse: Sized {
 pub struct Request<'a> {
     pub command: &'a str,
     pub api_version: Option<u32>,
-    pub params: serde_json::Map<String, Value>,
+    pub params: &'a Value,
 }
 
 /// For JSON RPC.
@@ -77,14 +77,26 @@ pub struct TypedRequest<'a, T> {
     pub data: T,
 }
 
-impl<'a, T: Into<serde_json::Map<String, Value>>> From<TypedRequest<'a, T>> for Request<'a>
+impl<'a, T: FormatRequest> From<&TypedRequest<'a, T>> for Request<'a>
 {
-    fn from(value: TypedRequest<'a, T>) -> Self {
+    fn from(value: &TypedRequest<'a, T>) -> Self {
         Self {
             command: value.command,
             api_version: value.api_version,
-            params: value.data.into(),
+            params: &value.data.to_json(),
         }
+    }
+}
+
+// impl<'a, T: Into<Value>> FormatRequest for TypedRequest<'a, T> {
+//     fn to_json(&self) -> Value {
+//         Request::from(self).to_json()
+//     }
+// }
+
+impl<'a> Into<Value> for Request<'a> {
+    fn into(self) -> Value {
+        self.to_json()
     }
 }
 
@@ -111,12 +123,9 @@ impl<'a> FormatRequest for Request<'a> {
         if let Some(api_version) = self.api_version {
             params[&*API_VERSION_KEY] = Value::String(api_version.to_string());
         }
-        for (key, value) in &self.params {
-            params[key] = value.to_owned();
-        }
         json!({
             "method": self.command,
-            "params": params,
+            "params": self.params,
         })
     }
 }
@@ -129,8 +138,10 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
         if let Some(api_version) = self.request.api_version {
             params[&*API_VERSION_KEY] = Value::String(api_version.to_string());
         }
-        for (key, value) in &self.request.params {
-            params[key] = value.to_owned();
+        if let Some(params) = self.request.params.as_object() { // dirty hack!
+            for (key, value) in params {
+                params[key] = value.to_owned();
+            }
         }
         json!(params)
     }
@@ -154,7 +165,7 @@ impl XrpError {
 
 /// For JSON RPC.
 pub struct Response {
-    pub result: serde_json::Map<String, Value>,
+    pub result: Value,
     pub load: bool,
     // TODO: `warnings`
     pub forwarded: bool,
@@ -167,7 +178,7 @@ pub struct TypedResponse<T> {
     pub forwarded: bool,
 }
 
-impl<T: From<serde_json::Map<String, Value>>> From<Response> for TypedResponse<T> {
+impl<T: From<Value>> From<Response> for TypedResponse<T> {
     fn from(value: Response) -> Self {
         Self {
             result: value.result.into(),
@@ -184,12 +195,19 @@ pub struct StreamedResponse {
     // TODO: `type`
 }
 
+impl<T: From<Value>> ParseResponse for TypedResponse<T> {
+    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
+        Ok(TypedResponse::<T>::from(Response::from_json(value)?))
+    }
+}
+
+
 // TODO: Need to extract
 impl<'a> ParseResponse for Response {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        let result = value.get("result").ok_or(WrongFieldsError::new())?.as_object().ok_or(WrongFieldsError::new())?;
+        let result = value.get("result").ok_or(WrongFieldsError::new())?;
         // TODO: Implement without `clone`.
-        Self::parse_error(result)?;
+        Self::parse_error(&result)?;
         Ok(Response {
             result: result.clone(),
             load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
@@ -201,7 +219,7 @@ impl<'a> ParseResponse for Response {
 impl<'a> ParseResponse for StreamedResponse {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
         // TODO: Implement without `clone`.
-        let result = value.get("result").ok_or(WrongFieldsError::new())?.as_object().ok_or(WrongFieldsError::new())?.clone();
+        let result = value.get("result").ok_or(WrongFieldsError::new())?.clone();
         Self::parse_error(&result)?;
         let response = Response {
             result,
@@ -388,8 +406,8 @@ impl<'a> Drop for WebSocketMessageWaiter<'a> {
 
 pub trait PaginatorExtractor: ParseResponse + Unpin {
     // TODO: Rename the methods.
-    fn list_obj(result: &serde_json::Map<String, Value>) -> Result<&Value, WrongFieldsError>;
-    fn list_part(result: &serde_json::Map<String, Value>) -> Result<&Vec<Value>, WrongFieldsError> {
+    fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError>;
+    fn list_part(result: &Value) -> Result<&Vec<Value>, WrongFieldsError> {
         Ok(Self::list_obj(result)?.as_array_valid()?)
     }
 }
@@ -467,7 +485,9 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
             };
             if let Some(marker) = marker {
                 let mut request = this.request.clone();
-                request.params.insert(MARKER_KEY.clone(), marker);
+                if let Some(mut params) = request.params.as_object() {
+                    params.insert(MARKER_KEY.clone(), marker);
+                }
                 loader(&request)
             } else {
                 Poll::Ready(None)
@@ -505,13 +525,13 @@ mod tests {
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: serde_json::Map::new(),
+                params: &Value::Object(serde_json::Map::new()),
             });
         let _waiter2 =
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: serde_json::Map::new(),
+                params: &Value::Object(serde_json::Map::new()),
             });
     }
 }
