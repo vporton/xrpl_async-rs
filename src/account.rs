@@ -68,8 +68,8 @@ impl ParseResponse for ChannelPaginator {
             channel_id: value.get_valid("channel_id")?.as_hash_valid()?,
             destination_account: value.get_valid("destination_account")?.as_address_valid()?,
             settle_delay: value.get_valid("settle_delay")?.as_u64_valid()?,
-            public_key: value.get("public_key").map(|s| -> Result<_, WrongFieldsError> { Ok(AccountPublicKey::decode(s.as_str_valid()?).map_err(|_| WrongFieldsError::new())?) })
-                .or(value.get("public_key_hex").map(|s| Ok(AccountPublicKey::decode_hex(s.as_str_valid()?).map_err(|_| WrongFieldsError::new())?)))
+            public_key: value.get("public_key").map(|s| -> Result<_, WrongFieldsError> { AccountPublicKey::decode(s.as_str_valid()?).map_err(|_| WrongFieldsError::new()) })
+                .or(value.get("public_key_hex").map(|s| AccountPublicKey::decode_hex(s.as_str_valid()?).map_err(|_| WrongFieldsError::new())))
                 .transpose()?,
             expiration: value.get("expiration").map(|s| s.as_u64_valid()).transpose()?,
             cancel_after: value.get("cancel_after").map(|s| s.as_u64_valid()).transpose()?,
