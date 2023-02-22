@@ -17,31 +17,31 @@ pub(crate) trait ValueExt {
 
 impl ValueExt for Value {
     fn get_valid(&self, key: &str) -> Result<&Value, WrongFieldsError> {
-        Ok(self.get(key).ok_or(WrongFieldsError::new())?)
+        self.get(key).ok_or(WrongFieldsError::new())
     }
     fn as_bool_valid(&self) -> Result<bool, WrongFieldsError> {
-        Ok(self.as_bool().ok_or(WrongFieldsError::new())?)
+        self.as_bool().ok_or(WrongFieldsError::new())
     }
     fn as_str_valid(&self) -> Result<&str, WrongFieldsError> {
-        Ok(self.as_str().ok_or(WrongFieldsError::new())?)
+        self.as_str().ok_or(WrongFieldsError::new())
     }
     fn as_f64_valid(&self) -> Result<f64, WrongFieldsError> {
-        Ok(self.as_f64().ok_or(WrongFieldsError::new())?)
+        self.as_f64().ok_or(WrongFieldsError::new())
     }
     fn as_u64_valid(&self) -> Result<u64, WrongFieldsError> {
-        Ok(self.as_u64().ok_or(WrongFieldsError::new())?)
+        self.as_u64().ok_or(WrongFieldsError::new())
     }
     fn as_u32_valid(&self) -> Result<u32, WrongFieldsError> {
-        Ok(self.as_u64_valid()?.try_into().map_err(|_| WrongFieldsError::new())?)
+        self.as_u64_valid()?.try_into().map_err(|_| WrongFieldsError::new())
     }
     fn as_array_valid(&self) -> Result<&Vec<Value>, WrongFieldsError> {
-        Ok(self.as_array().ok_or(WrongFieldsError::new())?)
+        self.as_array().ok_or(WrongFieldsError::new())
     }
     fn as_hash_valid(&self) -> Result<Hash, WrongFieldsError> {
-        Ok(Hash::from_hex(self.as_str_valid()?).map_err(|_| WrongFieldsError::new())?)
+        Hash::from_hex(self.as_str_valid()?).map_err(|_| WrongFieldsError::new())
     }
     fn as_address_valid(&self) -> Result<Address, WrongFieldsError> {
-        Ok(Address::decode(self.as_str_valid()?).map_err(|_| WrongFieldsError::new())?)
+        Address::decode(self.as_str_valid()?).map_err(|_| WrongFieldsError::new())
     }
 }
 

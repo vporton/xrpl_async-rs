@@ -71,10 +71,10 @@ impl ParseResponse for ChannelPaginator {
             public_key: value.get("public_key").map(|s| -> Result<_, WrongFieldsError> { Ok(AccountPublicKey::decode(s.as_str_valid()?).map_err(|_| WrongFieldsError::new())?) })
                 .or(value.get("public_key_hex").map(|s| Ok(AccountPublicKey::decode_hex(s.as_str_valid()?).map_err(|_| WrongFieldsError::new())?)))
                 .transpose()?,
-            expiration: value.get("expiration").map(|s| -> Result<_, WrongFieldsError> { Ok(s.as_u64_valid()?) }).transpose()?,
-            cancel_after: value.get("cancel_after").map(|s| -> Result<_, WrongFieldsError> { Ok(s.as_u64_valid()?) }).transpose()?,
-            source_tag: value.get("source_tag").map(|s| -> Result<_, WrongFieldsError> { Ok(s.as_u32_valid()?) }).transpose()?,
-            destination_tag: value.get("destination_tag").map(|s| -> Result<_, WrongFieldsError> { Ok(s.as_u32_valid()?) }).transpose()?,
+            expiration: value.get("expiration").map(|s| s.as_u64_valid()).transpose()?,
+            cancel_after: value.get("cancel_after").map(|s| s.as_u64_valid()).transpose()?,
+            source_tag: value.get("source_tag").map(|s| s.as_u32_valid()).transpose()?,
+            destination_tag: value.get("destination_tag").map(|s| s.as_u32_valid()).transpose()?,
         })
     }
 }
