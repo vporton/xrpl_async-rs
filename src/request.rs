@@ -11,7 +11,7 @@ lazy_static! {
 pub struct Request<'a> {
     pub command: &'a str,
     pub api_version: Option<u32>,
-    pub params: &'a Value,
+    pub params: Value,
 }
 
 /// For JSON RPC.
@@ -28,7 +28,7 @@ impl<'a, T: FormatRequest> From<&TypedRequest<'a, T>> for Request<'a>
         Self {
             command: value.command,
             api_version: value.api_version,
-            params: &value.data.to_json(),
+            params: value.data.to_json(),
         }
     }
 }
@@ -83,8 +83,8 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
         if let Some(api_version) = self.request.api_version {
             params[&*API_VERSION_KEY] = Value::String(api_version.to_string());
         }
-        if let Some(params) = self.request.params.as_object() { // dirty hack!
-            for (key, value) in params {
+        if let Some(params2) = self.request.params.as_object() { // dirty hack!
+            for (key, value) in params2 {
                 params[key] = value.to_owned();
             }
         }
