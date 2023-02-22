@@ -43,13 +43,21 @@ pub struct TypedResponse<T> {
     pub forwarded: bool,
 }
 
-impl<T: From<Value>> From<Response> for TypedResponse<T> {
-    fn from(value: Response) -> Self {
-        Self {
-            result: value.result.into(),
+impl<T: ParseResponse> TryFrom<Response> for TypedResponse<T> {
+    type Error = ParseResponseError;
+
+    fn try_from(value: Response) -> Result<Self, ParseResponseError> {
+        Ok(Self {
+            result: T::from_json(&value.result)?,
             load: value.load,
             forwarded: value.forwarded,
-        }
+        })
+    }
+}
+
+impl<T: ParseResponse> ParseResponse for TypedResponse<T> {
+    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
+        Ok(TypedResponse::<T>::from_json(value)?.into())
     }
 }
 
@@ -78,12 +86,6 @@ pub struct StreamedResponse {
     pub response: Response,
     pub id: u64,
     // TODO: `type`
-}
-
-impl<T: From<Value>> ParseResponse for TypedResponse<T> {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        Ok(TypedResponse::<T>::from(Response::from_json(value)?))
-    }
 }
 
 // TODO: Need to extract

@@ -33,7 +33,7 @@ impl<'a, T: FormatRequest> From<&TypedRequest<'a, T>> for Request<'a>
     }
 }
 
-impl<'a, T: Into<Value>> FormatRequest for TypedRequest<'a, T> {
+impl<'a, T: FormatRequest> FormatRequest for TypedRequest<'a, T> {
     fn to_json(&self) -> Value {
         Request::from(self).to_json()
     }
