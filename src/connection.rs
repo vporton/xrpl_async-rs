@@ -402,7 +402,7 @@ pub struct Paginator<'a, A: Api, T: PaginatorExtractor> where A::Error: From<Par
 }
 
 impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
-    where A::Error: From<ParseResponseError>, A::Error: From<WrongFieldsError> // TODO: Simplify.
+    where A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
     fn new(api: &'a A, request: Request<'a>, first_page_list: VecDeque<T>) -> Self {
         Self {
@@ -422,7 +422,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
 }
 
 impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
-    where A::Error: From<ParseResponseError>, A::Error: From<WrongFieldsError> // TODO
+    where A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
     type Item = Result<TypedResponse<T>, A::Error>;
     fn poll_next(
