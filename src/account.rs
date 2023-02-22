@@ -88,8 +88,8 @@ impl PaginatorExtractor for ChannelPaginator {
     }
 }
 
-pub async fn account_channels<'a, A>(api: &A, request: &'a TypedRequest<'a, ChannelsRequest>)
-                           -> Result<(TypedResponse<ChannelResponse>, ChannelPaginator), A::Error>
+pub async fn account_channels<'a, A>(api: &'a A, request: &'a TypedRequest<'a, ChannelsRequest>)
+                           -> Result<(TypedResponse<ChannelResponse>, Paginator<'a, A, ChannelPaginator>), A::Error>
     where A: Api,
           A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
