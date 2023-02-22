@@ -93,6 +93,5 @@ pub async fn account_channels<'a, A>(api: &'a A, request: &'a TypedRequest<'a, C
           A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
     let (response, paginator) = Paginator::start(api, request.into()).await?;
-    let response: TypedResponse<ChannelResponse> = response.try_into()?;
-    Ok((response, paginator))
+    Ok((response.try_into()?, paginator))
 }
