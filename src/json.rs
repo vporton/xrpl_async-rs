@@ -1,6 +1,6 @@
 use serde_json::Value;
 use crate::address::Address;
-use crate::connection::WrongFieldsError;
+use crate::response::WrongFieldsError;
 use crate::types::Hash;
 
 pub(crate) trait ValueExt {

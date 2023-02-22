@@ -1,8 +1,11 @@
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use crate::address::{AccountPublicKey, Address};
-use crate::connection::{Api, FormatRequest, Paginator, PaginatorExtractor, ParseResponse, ParseResponseError, Request, Response, TypedRequest, TypedResponse, WrongFieldsError};
+use crate::connection::Api;
 use crate::types::{Hash, Ledger};
 use crate::json::ValueExt;
+use crate::paginate::{Paginator, PaginatorExtractor};
+use crate::request::{FormatRequest, TypedRequest};
+use crate::response::{ParseResponse, ParseResponseError, TypedResponse, WrongFieldsError};
 
 struct ChannelsRequest {
     account: Address,
@@ -85,11 +88,12 @@ impl PaginatorExtractor for ChannelPaginator {
     }
 }
 
-pub async fn account_channels<A>(api: &A, request: &TypedRequest<ChannelsRequest>)
-                           -> (TypedResponse<ChannelResponse>, ChannelPaginator)
+pub async fn account_channels<'a, A>(api: &A, request: &'a TypedRequest<'a, ChannelsRequest>)
+                           -> Result<(TypedResponse<ChannelResponse>, ChannelPaginator), A::Error>
     where A: Api,
           A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
     let (response, paginator) = Paginator::start(api, request.into()).await?;
-    (ChannelResponse::from(response), paginator)
+    let response: TypedResponse<ChannelResponse> = response.into();
+    Ok((response, paginator))
 }
