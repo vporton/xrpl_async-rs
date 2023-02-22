@@ -213,13 +213,13 @@ mod tests {
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: Value::Object(serde_json::Map::new()),
+                params: serde_json::Map::new(),
             });
         let _waiter2 =
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: Value::Object(serde_json::Map::new()),
+                params: serde_json::Map::new(),
             });
     }
 }

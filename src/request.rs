@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use serde_json::{json, Number, Value};
+use serde_json::{json, Map, Number, Value};
 
 lazy_static! {
     static ref API_VERSION_KEY: String = "api_version".to_string();
@@ -11,7 +11,7 @@ lazy_static! {
 pub struct Request<'a> {
     pub command: &'a str,
     pub api_version: Option<u32>,
-    pub params: Value,
+    pub params: Map<String, Value>,
 }
 
 /// For JSON RPC.
@@ -22,7 +22,7 @@ pub struct TypedRequest<'a, T> {
     pub data: T,
 }
 
-impl<'a, T: FormatRequest> From<&TypedRequest<'a, T>> for Request<'a>
+impl<'a, T: FormatParams> From<&TypedRequest<'a, T>> for Request<'a>
 {
     fn from(value: &TypedRequest<'a, T>) -> Self {
         Self {
@@ -33,7 +33,7 @@ impl<'a, T: FormatRequest> From<&TypedRequest<'a, T>> for Request<'a>
     }
 }
 
-impl<'a, T: FormatRequest> FormatRequest for TypedRequest<'a, T> {
+impl<'a, T: FormatParams> FormatRequest for TypedRequest<'a, T> {
     fn to_json(&self) -> Value {
         Request::from(self).to_json()
     }
@@ -53,6 +53,10 @@ pub trait FormatRequest {
     fn to_string_pretty(&self) -> serde_json::Result<String> {
         serde_json::to_string_pretty(&self.to_json())
     }
+}
+
+pub trait FormatParams {
+    fn to_json(&self) -> Map<String, Value>;
 }
 
 /// For WebSocket.
@@ -83,10 +87,8 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
         if let Some(api_version) = self.request.api_version {
             params[&*API_VERSION_KEY] = Value::String(api_version.to_string());
         }
-        if let Some(params2) = self.request.params.as_object() { // dirty hack!
-            for (key, value) in params2 {
-                params[key] = value.to_owned();
-            }
+        for (key, value) in &self.request.params {
+            params[key] = value.to_owned();
         }
         json!(params)
     }

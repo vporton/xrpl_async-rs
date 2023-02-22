@@ -95,9 +95,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
             };
             if let Some(marker) = marker {
                 let mut request = this.request.clone();
-                if let Some(mut params) = request.params.as_object() {
-                    params.insert(MARKER_KEY.clone(), marker);
-                }
+                request.params.insert(MARKER_KEY.clone(), marker);
                 loader(&request)
             } else {
                 Poll::Ready(None)

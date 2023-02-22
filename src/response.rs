@@ -55,12 +55,6 @@ impl<T: ParseResponse> TryFrom<Response> for TypedResponse<T> {
     }
 }
 
-impl<T: ParseResponse> ParseResponse for TypedResponse<T> {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        Ok(TypedResponse::<T>::from_json(value)?.into())
-    }
-}
-
 pub trait ParseResponse: Sized {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError>;
     fn from_string(s: &str) -> Result<Self, ParseResponseError> {

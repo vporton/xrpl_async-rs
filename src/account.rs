@@ -1,24 +1,23 @@
-use serde_json::{json, Value};
+use serde_json::{Map, Value};
 use crate::address::{AccountPublicKey, Address};
 use crate::connection::Api;
 use crate::types::{Hash, Ledger};
 use crate::json::ValueExt;
 use crate::paginate::{Paginator, PaginatorExtractor};
-use crate::request::{FormatRequest, TypedRequest};
+use crate::request::{FormatParams, TypedRequest};
 use crate::response::{ParseResponse, ParseResponseError, TypedResponse, WrongFieldsError};
 
-struct ChannelsRequest {
+pub struct ChannelsRequest {
     account: Address,
     destination_account: Option<Address>,
     ledger: Ledger,
     limit: Option<u16>,
 }
 
-impl FormatRequest for ChannelsRequest {
-    fn to_json(&self) -> Value {
-        let mut j = json!({
-           "account": Value::String(self.account.encode()),
-        });
+impl FormatParams for ChannelsRequest {
+    fn to_json(&self) -> Map<String, Value> {
+        let mut j = Map::new();
+        j["account"] = Value::String(self.account.encode());
         if let Some(address) = &self.destination_account {
             j["destination_account"] = address.encode().into();
         }
