@@ -89,11 +89,16 @@ impl PaginatorExtractor for ChannelPaginator {
 
 pub async fn account_channels<'a, A>(
     api: &'a A,
-    request: &'a TypedRequest<'a, ChannelsRequest>,
+    data: &'a ChannelsRequest,
 ) -> Result<(TypedResponse<ChannelResponse>, Paginator<'a, A, ChannelPaginator>), A::Error>
     where A: Api,
           A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
+    let request = TypedRequest {
+        command: "account_channels",
+        api_version: Some(1),
+        data,
+    };
     let (response, paginator) = Paginator::start(api, request.into()).await?;
     Ok((response.try_into()?, paginator))
 }
