@@ -3,4 +3,5 @@
 - Replace `workflow-websocket` by plain `tokio-tungstenite`?
   (however, that is more low-level).
 - Remove dependency to `xrpl-rust`.
+- Doc comments.
 - `FIXME` and `TODO` in the sources.
