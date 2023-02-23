@@ -31,6 +31,9 @@ impl XrpError {
 pub trait Api {
     type Error;
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, Self::Error>;
+    // async fn call_typed<'a, T: Into<Request<'a>>, U: TryFrom<Response>>(&self, request: T) -> Result<U, Self::Error> {
+    //     Ok(self.call(request.into()).await?.try_into().map_err(|_| WrongFieldsError::new())?)
+    // }
 }
 
 pub struct JsonRpcApi {
