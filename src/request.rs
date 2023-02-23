@@ -71,7 +71,7 @@ impl<'a> FormatRequest for Request<'a> {
     fn to_json(&self) -> Value {
         let mut params = serde_json::Map::<String, Value>::new();
         if let Some(api_version) = self.api_version {
-            params.insert(API_VERSION_KEY.clone(), Value::String(api_version.to_string())); // TODO: Don't clone.
+            params.insert(API_VERSION_KEY.clone(), api_version.into()); // TODO: Don't clone.
         }
         json!({
             "method": self.command,
@@ -87,7 +87,7 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
         params.insert(ID_KEY.clone(), Value::Number(Number::from(self.id)));
         params.insert(COMMAND_KEY.clone(), Value::String(self.request.command.to_owned()));
         if let Some(api_version) = self.request.api_version {
-            params.insert(API_VERSION_KEY.clone(), Value::String(api_version.to_string()));
+            params.insert(API_VERSION_KEY.clone(), api_version.into());
         }
         for (key, value) in &self.request.params {
             params.insert(key.clone(), value.to_owned());

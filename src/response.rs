@@ -103,7 +103,7 @@ impl<'a> ParseResponse for StreamedResponse {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
         // TODO: Implement without `clone`.
         let result = value.get("result").ok_or(WrongFieldsError::new())?.clone();
-        Self::parse_error(&result)?;
+        Self::parse_error(value)?;
         let response = Response {
             result,
             load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
