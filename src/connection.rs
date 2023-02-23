@@ -10,7 +10,6 @@ use crate::response::ParseResponseError::HttpStatus;
 use crate::request::{FormatRequest, Request, StreamedRequest};
 use crate::response::{ParseResponse, ParseResponseError, Response, StreamedResponse, WrongFieldsError};
 
-// TODO: unused?
 #[derive(Debug)]
 pub struct XrpError {
     error_code: String,
