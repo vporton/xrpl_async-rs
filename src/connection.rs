@@ -173,7 +173,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                         return Ok(response);
                     }
                 },
-                Message::Binary(msg) => {},
+                Message::Binary(_) => {},
             }
         }
     }
