@@ -97,12 +97,16 @@ impl WebSocketApi {
             id: Fragile::new(Cell::new(0)),
         }
     }
+    pub async fn reconnect(&self) -> Result<(), WebSocketApiError> {
+        Ok(self.client.reconnect().await?)
+    }
 }
 
 #[derive(Debug, From)]
 pub enum WebSocketApiError {
     WebSocketFail(workflow_websocket::client::Error),
     Parse(ParseResponseError),
+    Disconnect,
 }
 
 impl From<WrongFieldsError> for WebSocketApiError {
@@ -158,8 +162,10 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             match self.api.client.recv().await? {
                 Message::Open => {},
                 Message::Close => {
-                    // TODO:
-                    // self.api.responses.get_mut().get_mut().clear();
+                    self.api.client.disconnect().await?; // Prevent attempts to re-connect...
+                    // ... because we lost state.
+                    unsafe { &mut *self.api.responses.get().as_ptr() }.clear(); // TODO: Check `unsafe`s again.
+                    return Err(WebSocketApiError::Disconnect);
                 },
                 Message::Text(msg) => {
                     let response = StreamedResponse::from_string(&msg)?;
