@@ -46,8 +46,7 @@ pub struct TypedResponse<T> {
     pub forwarded: bool,
 }
 
-// FIXME: Remove `Clone`.
-impl<'de, T: Deserialize<'de> + Clone> TryFrom<Response> for TypedResponse<T> {
+impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
     type Error = ParseResponseError;
 
     fn try_from(value: Response) -> Result<Self, ParseResponseError> {
