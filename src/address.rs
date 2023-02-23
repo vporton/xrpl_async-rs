@@ -2,8 +2,7 @@ use std::array::TryFromSliceError;
 use std::fmt::{Display, Formatter};
 use std::iter::once;
 use ::hex::FromHexError;
-use ::hex::encode_upper;
-use derive_more::{Display, From};
+use derive_more::From;
 use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
 use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -33,7 +32,7 @@ impl Display for FromXRPDecodingError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Encoding<
     const LENGTH: usize,
     const TYPE_PREFIX: u8,

@@ -7,7 +7,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Visitor;
 use serde_json::{json, Value};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Hash([u8; 32]);
 
 impl ToString for Hash {

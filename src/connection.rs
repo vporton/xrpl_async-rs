@@ -5,10 +5,11 @@ use derive_more::From;
 use serde_json::Value;
 use async_trait::async_trait;
 use reqwest::Client;
+use serde::Deserialize;
 use workflow_websocket::client::{Message, WebSocket};
 use crate::response::ParseResponseError::HttpStatus;
 use crate::request::{FormatRequest, Request, StreamedRequest};
-use crate::response::{ParseResponse, ParseResponseError, Response, StreamedResponse, WrongFieldsError};
+use crate::response::{ParseResponseError, Response, StreamedResponse, WrongFieldsError};
 
 #[derive(Debug)]
 pub struct XrpError {
@@ -170,7 +171,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                     return Err(WebSocketApiError::Disconnect);
                 },
                 Message::Text(msg) => {
-                    let response = StreamedResponse::from_string(&msg)?;
+                    let response: StreamedResponse = serde_json::from_str(&msg)?;
                     // TODO: Check `unsafe`s again.
                     unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.response);
                     if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
