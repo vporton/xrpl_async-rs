@@ -97,8 +97,8 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
 }
 
 impl<'a> PaginatorExtractor<'a> for ChannelPaginator {
-    fn list_obj(result: Value) -> Result<Value, WrongFieldsError> {
-        Ok(result.get_valid("channels")?.clone()) // FIXME: Eliminate `clone`
+    fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError> {
+        Ok(result.get_valid("channels")?)
     }
 }
 

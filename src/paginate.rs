@@ -16,8 +16,8 @@ lazy_static! {
 
 pub trait PaginatorExtractor<'de>: Deserialize<'de> + Unpin {
     // FIXME: objects vs references
-    fn list_obj(result: Value) -> Result<Value, WrongFieldsError>;
-    fn list(result: Value) -> Result<Vec<Value>, WrongFieldsError> {
+    fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError>;
+    fn list(result: &Value) -> Result<Vec<Value>, WrongFieldsError> {
         Ok(Self::list_obj(result)?.as_array_valid()?.clone()) // FIXME: Eliminate `clone`.
     }
 }
@@ -43,7 +43,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
     pub async fn start(api: &'a A, request: Request<'a>) -> Result<(Response, Paginator<'a, A, T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        let list = T::list(response.result.clone()) // TODO: `clone`?
+        let list = T::list(&response.result) // TODO: `clone`?
             .map_err(|_| WrongFieldsError::new())?
             .into_iter()
             .map(|e| T::deserialize(e).map_err(|_| WrongFieldsError::new().into()))
@@ -54,7 +54,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
     pub async fn first_page(api: &'a A, request: Request<'a>) -> Result<(Response, Vec<T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        let list: Vec<T> = T::list(response.result.clone()) // TODO: `clone`?
+        let list: Vec<T> = T::list(&response.result) // TODO: `clone`?
             .map_err(|_| WrongFieldsError::new())?
             .into_iter()
             .map(|e| T::deserialize(e).map_err(|_| WrongFieldsError::new().into()))
@@ -90,7 +90,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                         load = response.load;
                         forwarded = response.forwarded;
                         // TODO: Duplicate code:
-                        this.list = T::list(response.result.clone()) // TODO: `clone`?
+                        this.list = T::list(&response.result) // TODO: `clone`?
                             .map_err(|_| WrongFieldsError::new())?
                             .into_iter()
                             .map(|e| T::deserialize(e).map_err(|_| WrongFieldsError::new().into()))
