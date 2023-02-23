@@ -31,3 +31,7 @@ similarly for other API methods.
 Two implementations of `Api` method are provided:
 * `JsonRpcApi`
 * `WebSocketApi`
+
+I don't use `serde` for (de)serialization, because it does not support
+calculated fields, therefore implementing both `public_key` and
+`public_key_hex` with `serde` is difficult.
