@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::fmt::Debug;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use lazy_static::lazy_static;
@@ -28,8 +27,7 @@ pub struct Paginator<'a, A: Api, T: PaginatorExtractor> where A::Error: From<Par
     marker: Option<Value>,
 }
 
-// TODO: Remove `Debug`.
-impl<'a, A: Api, T: PaginatorExtractor + Debug> Paginator<'a, A, T>
+impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
     where A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
     fn new(api: &'a A, request: Request<'a>, first_page_list: VecDeque<T>) -> Self {
