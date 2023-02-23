@@ -85,7 +85,6 @@ pub struct StreamedResponse {
     // TODO: `type`
 }
 
-// TODO: Need to extract
 impl<'a> ParseResponse for Response {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
         let result = value.get("result").ok_or(WrongFieldsError::new())?;

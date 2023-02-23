@@ -64,7 +64,7 @@ pub trait FormatParams {
 #[derive(Debug)]
 pub struct StreamedRequest<'a> {
     pub request: Request<'a>,
-    pub id: u64, // TODO: `pub`?
+    pub id: u64,
 }
 
 impl<'a> FormatRequest for Request<'a> {
