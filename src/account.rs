@@ -68,6 +68,7 @@ pub struct ChannelPaginator {
 
 impl ParseResponse for ChannelPaginator {
     fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
+        // FIXME: Numbers are represented as strings.
         Ok(Self {
             account: value.get_valid("account")?.as_address_valid()?,
             amount: value.get_valid("amount")?.as_f64_valid()?,
@@ -88,7 +89,7 @@ impl ParseResponse for ChannelPaginator {
 
 impl PaginatorExtractor for ChannelPaginator {
     fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError> {
-        Ok(result.get("channels").ok_or(WrongFieldsError::new())?)
+        Ok(result.get_valid("channels")?)
     }
 }
 
