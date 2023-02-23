@@ -50,6 +50,7 @@ impl ParseResponse for ChannelResponse {
     }
 }
 
+#[derive(Debug)]
 pub struct ChannelPaginator {
     pub account: Address,
     pub amount: f64,

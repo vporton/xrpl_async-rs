@@ -1,4 +1,5 @@
 use reqwest::Client;
+use tokio_stream::StreamExt;
 use xrpl_async::account::{account_channels, ChannelsRequest};
 use xrpl_async::address::Address;
 use xrpl_async::connection::JsonRpcApi;
@@ -14,6 +15,9 @@ async fn main() {
         ledger: Ledger::Validated,
         limit: None,
     };
-    let (response, _paginator) = account_channels(&api, &request).await.unwrap();
+    let (response, mut paginator) = account_channels(&api, &request).await.unwrap();
     println!("{:?}", response);
-}
+    while let Some(item) = paginator.next().await {
+        let item = item.unwrap();
+        println!("{:?}", item);
+    }}

@@ -12,7 +12,7 @@ let request = ChannelsRequest {
     ledger: Ledger::Validated,
     limit: None,   
 };
-let (response, paginator) = account_channels(&api, &request)?;
+let (response, mut paginator) = account_channels(&api, &request)?;
 // Now `response` contains data from response.
 // Now `paginator` is a stream that is able to traverse multiple pages.
 ```
