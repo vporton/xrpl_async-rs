@@ -3,6 +3,8 @@ use std::iter::{once, repeat};
 use std::num::ParseIntError;
 use hex::{decode, FromHexError};
 use derive_more::From;
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::Visitor;
 use serde_json::{json, Value};
 
 #[derive(Debug)]
@@ -26,12 +28,66 @@ impl Hash {
     }
 }
 
+impl Serialize for Hash {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+struct HashVisitor;
+
+impl<'de> Visitor<'de> for HashVisitor {
+    type Value = Hash;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a hex hash")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where E: de::Error,
+    {
+        Hash::from_hex(&value).map_err(|_| de::Error::custom("invalid hash"))
+    }
+}
+
+impl<'de> Deserialize<'de> for Hash {
+    fn deserialize<D>(deserializer: D) -> Result<Hash, D::Error>
+        where D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(HashVisitor)
+    }
+}
+
 pub fn encode_xrp_amount(amount: u64) -> String {
     amount.to_string()
 }
 
 pub fn decode_xrp_amount(s: &str) -> Result<u64, ParseIntError> {
     s.parse::<u64>()
+}
+
+pub mod xrp {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use crate::types::decode_xrp_amount;
+
+    pub fn serialize_with<S>(x: &u64, s: S) -> Result<S::Ok, S::Error>
+        where S: Serializer,
+    {
+        s.serialize_str(&super::encode_xrp_amount(*x))
+    }
+
+    pub fn deserialize_with<'de, D>(deserializer: D) -> Result<u64, D::Error>
+        where D: Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        String::deserialize(deserializer)
+            .and_then(|string| decode_xrp_amount(&string).map_err(|err| Error::custom(err.to_string())))
+    }
+
 }
 
 const XPR_DIGITS_AFTER_DOT: usize = 6;

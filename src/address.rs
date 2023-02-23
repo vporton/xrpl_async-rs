@@ -1,10 +1,13 @@
 use std::array::TryFromSliceError;
+use std::fmt::Formatter;
 use std::iter::once;
 // use derive::Debug;
 use derive_more::From;
 use hex::FromHexError;
 use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
 use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::Visitor;
 
 #[derive(Debug)]
 pub struct WrongPrefixError;
@@ -79,3 +82,39 @@ pub type SeedValue = Encoding<16, 0x21, 's'>;
 
 /// Validation public key or node public key
 pub type ValidationOrNodePublicKey = Encoding<33, 0x1C, 'n'>;
+
+impl Serialize for Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        serializer.serialize_str(&self.encode())
+    }
+}
+
+struct AddressVisitor;
+
+impl<'de> Visitor<'de> for AddressVisitor {
+    type Value = Address;
+
+    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        formatter.write_str("an address")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+    {
+        Address::decode(&value).map_err(|_| de::Error::custom("invalid address"))
+    }
+
+}
+
+impl<'de> Deserialize<'de> for Address {
+    fn deserialize<D>(deserializer: D) -> Result<Address, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(AddressVisitor)
+    }
+}
