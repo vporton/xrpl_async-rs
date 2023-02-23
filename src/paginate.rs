@@ -2,7 +2,6 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use async_trait::async_trait;
 use lazy_static::lazy_static;
 use serde_json::Value;
 use tokio_stream::Stream;
@@ -45,9 +44,24 @@ impl<'a, A: Api, T: PaginatorExtractor + Debug> Paginator<'a, A, T>
     pub async fn start(api: &'a A, request: Request<'a>) -> Result<(Response, Paginator<'a, A, T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        let list = T::list(&response.result).map_err(|_| WrongFieldsError::new())?.into_iter().map(|e| T::from_json(e))
-            .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
+        let list = T::list(&response.result)
+            .map_err(|_| WrongFieldsError::new())?
+            .into_iter()
+            .map(|e| T::from_json(e))
+            .collect::<Result<Vec<T>, ParseResponseError>>()?
+            .into();
         Ok((response, Self::new(api, request, list)))
+    }
+    pub async fn first_page(api: &'a A, request: Request<'a>) -> Result<(Response, Vec<T>), A::Error> {
+        let response = api.call(request.clone()).await?;
+        // TODO: Duplicate code:
+        let list: Vec<T> = T::list(&response.result)
+            .map_err(|_| WrongFieldsError::new())?
+            .into_iter()
+            .map(|e| T::from_json(e))
+            .collect::<Result<Vec<T>, ParseResponseError>>()?
+            .into();
+        Ok((response, list))
     }
 }
 
@@ -104,18 +118,4 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
             }
         }
     }
-}
-
-// TODO: Is it needed?
-#[async_trait]
-trait Paginated<Api, Element> {
-    fn get_raw_list_one_page(result: &Value) -> &Vec<Value>;
-    fn parse_element(e: &Value) -> Element;
-    fn get_list_one_page(result: &Value) -> Vec<Element> {
-        Self::get_raw_list_one_page(result).into_iter().map(|e| Self::parse_element(e)).collect()
-    }
-    // async fn get_full_list(api: &Api, request: Request<'async_trait>) {
-    //     let result = api.call(request).await?;
-    //     yield from get_list_one_page(&result);
-    // }
 }
