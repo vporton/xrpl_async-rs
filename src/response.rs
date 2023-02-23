@@ -50,7 +50,7 @@ impl<T: ParseResponse> TryFrom<Response> for TypedResponse<T> {
 
     fn try_from(value: Response) -> Result<Self, ParseResponseError> {
         Ok(Self {
-            result: T::from_json(&value.result)?,
+            result: T::deserialize(&value.result)?,
             load: value.load,
             forwarded: value.forwarded,
         })

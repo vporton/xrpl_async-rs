@@ -1,4 +1,6 @@
+// extern crate serde;
 use std::convert::{From, Into};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use crate::address::{AccountPublicKey, Address};
 use crate::connection::Api;
@@ -40,30 +42,28 @@ pub struct ChannelResponse {
     pub validated: Option<bool>,
 }
 
-impl ParseResponse for ChannelResponse {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        Ok(ChannelResponse {
-            ledger_hash: value.get("ledger_hash").map(|v| Ok::<_, WrongFieldsError>(v.as_hash_valid()?)).transpose()?,
-            ledger_index: value.get("ledger_index").map(|v| Ok::<_, WrongFieldsError>(v.as_u32_valid()?)).transpose()?,
-            validated: value.get("validated").map(|v| Ok::<_, WrongFieldsError>(v.as_bool_valid()?)).transpose()?,
-        })
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct ChannelPaginator {
     pub account: Address,
+    #[serde(with = "crate::types::xrp")]
     pub amount: u64,
     pub balance: u64,
     pub channel_id: Hash,
     pub destination_account: Address,
     pub settle_delay: u64,
+    #[serde(with = "crate::address::option_base58")]
     pub public_key: Option<AccountPublicKey>,
     // pub public_key_hex: Option<AccountPublicKey>,
     pub expiration: Option<u64>,
     pub cancel_after: Option<u64>,
     pub source_tag: Option<u32>,
     pub destination_tag: Option<u32>,
+}
+
+impl Deserialize for ChannelPaginator {
+    fn deserialize<D>(deserializer: D) -> Result<Self, serde::de::Error> where D: Deserializer<'de> {
+        let mut value =
+    }
 }
 
 impl ParseResponse for ChannelPaginator {

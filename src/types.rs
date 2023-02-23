@@ -71,15 +71,15 @@ pub fn decode_xrp_amount(s: &str) -> Result<u64, ParseIntError> {
 
 pub mod xrp {
     use serde::{Deserialize, Deserializer, Serializer};
-    use crate::types::decode_xrp_amount;
+    use super::*;
 
-    pub fn serialize_with<S>(x: &u64, s: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(x: &u64, s: S) -> Result<S::Ok, S::Error>
         where S: Serializer,
     {
         s.serialize_str(&super::encode_xrp_amount(*x))
     }
 
-    pub fn deserialize_with<'de, D>(deserializer: D) -> Result<u64, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
         where D: Deserializer<'de>,
     {
         use serde::de::Error;
@@ -87,7 +87,6 @@ pub mod xrp {
         String::deserialize(deserializer)
             .and_then(|string| decode_xrp_amount(&string).map_err(|err| Error::custom(err.to_string())))
     }
-
 }
 
 const XPR_DIGITS_AFTER_DOT: usize = 6;

@@ -80,7 +80,7 @@ impl Api for JsonRpcApi {
         if !result.status().is_success() {
             return Err(HttpStatus(result.status()).into());
         }
-        Ok(Response::from_json(&result.json::<Value>().await?)?)
+        Ok(Response::deserialize(&result.json::<Value>().await?)?)
     }
 }
 

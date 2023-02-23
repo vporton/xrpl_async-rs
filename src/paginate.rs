@@ -44,7 +44,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
         let list = T::list(&response.result)
             .map_err(|_| WrongFieldsError::new())?
             .into_iter()
-            .map(|e| T::from_json(e))
+            .map(|e| T::deserialize(e))
             .collect::<Result<Vec<T>, ParseResponseError>>()?
             .into();
         Ok((response, Self::new(api, request, list)))
@@ -55,7 +55,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
         let list: Vec<T> = T::list(&response.result)
             .map_err(|_| WrongFieldsError::new())?
             .into_iter()
-            .map(|e| T::from_json(e))
+            .map(|e| T::deserialize(e))
             .collect::<Result<Vec<T>, ParseResponseError>>()?
             .into();
         Ok((response, list))
@@ -88,7 +88,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Stream for Paginator<'a, A, T>
                         load = response.load;
                         forwarded = response.forwarded;
                         // TODO: Duplicate code:
-                        this.list = T::list(&response.result)?.iter().map(|e| T::from_json(e))
+                        this.list = T::list(&response.result)?.iter().map(|e| T::deserialize(e))
                             .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
                         this.marker = response.result.get(&*MARKER_KEY).map(|v| v.clone());
                         if let Some(front) = this.list.pop_front() {

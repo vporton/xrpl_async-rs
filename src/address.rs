@@ -1,9 +1,9 @@
 use std::array::TryFromSliceError;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use std::iter::once;
-// use derive::Debug;
-use derive_more::From;
-use hex::FromHexError;
+use ::hex::FromHexError;
+use ::hex::encode_upper;
+use derive_more::{Display, From};
 use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
 use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -24,6 +24,13 @@ pub enum FromXRPDecodingError {
     Hex(FromHexError),
     WrongPrefix(WrongPrefixError),
     WrongLength(TryFromSliceError),
+}
+
+// TODO: hack
+impl Display for FromXRPDecodingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FromXRPDecodingError")
+    }
 }
 
 #[derive(Debug)]
@@ -64,10 +71,10 @@ impl<
         Ok(Self::from_bytes_without_prefix(bytes.as_slice().try_into()?))
     }
     pub fn encode_hex(&self) -> String {
-        hex::encode_upper(self.0)
+        ::hex::encode_upper(self.0)
     }
     pub fn decode_hex(s: &str) -> Result<Self, FromXRPDecodingError> {
-        Ok(Self(hex::decode(s)?.as_slice().try_into()?))
+        Ok(Self(::hex::decode(s)?.as_slice().try_into()?))
     }
 }
 
@@ -107,7 +114,6 @@ impl<'de> Visitor<'de> for AddressVisitor {
     {
         Address::decode(&value).map_err(|_| de::Error::custom("invalid address"))
     }
-
 }
 
 impl<'de> Deserialize<'de> for Address {
@@ -116,5 +122,155 @@ impl<'de> Deserialize<'de> for Address {
             D: Deserializer<'de>,
     {
         deserializer.deserialize_str(AddressVisitor)
+    }
+}
+
+pub mod hex {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use super::*;
+
+    pub fn serialize<
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        S: Serializer,
+    >(x: &Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>, s: S) -> Result<S::Ok, S::Error>
+    {
+        s.serialize_str(&x.encode_hex())
+    }
+
+    pub fn deserialize<'de,
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        D: Deserializer<'de>,
+    >(deserializer: D) -> Result<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>, D::Error>
+    {
+        use serde::de::Error;
+
+        String::deserialize(deserializer)
+            .and_then(|string| Encoding::decode_hex(&string).map_err(|err| Error::custom(err.to_string())))
+    }
+}
+
+pub mod base58 {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use super::*;
+
+    pub fn serialize<
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        S: Serializer,
+    >(x: &Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>, s: S) -> Result<S::Ok, S::Error>
+    {
+        s.serialize_str(&x.encode())
+    }
+
+    pub fn deserialize<'de,
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        D: Deserializer<'de>,
+    >(deserializer: D) -> Result<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>, D::Error>
+    {
+        use serde::de::Error;
+
+        String::deserialize(deserializer)
+            .and_then(|string| Encoding::decode(&string).map_err(|err| Error::custom(err.to_string())))
+    }
+}
+
+pub mod option_hex {
+    use super::*;
+
+    struct Wrap<
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char>(Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>
+    );
+
+    impl<
+        'de,
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char
+    >
+    Deserialize<'de> for Wrap<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            Ok(Wrap(hex::deserialize(deserializer)?))
+        }
+    }
+
+    pub fn serialize<
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        S: Serializer,
+    >(x: &Option<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>>, s: S) -> Result<S::Ok, S::Error>
+    {
+        if let Some(x) = x {
+            hex::serialize(x, s)
+        } else {
+            None::<()>.serialize(s)
+        }
+    }
+
+    pub fn deserialize<'de,
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        D: Deserializer<'de>,
+    >(deserializer: D) -> Result<Option<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>>, D::Error>
+    {
+        let result = Option::<Wrap::<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>>::deserialize(deserializer)?;
+        Ok(result.map(|v| v.0))
+    }
+}
+
+pub mod option_base58 {
+    use super::*;
+
+    struct Wrap<
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char>(Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>
+    );
+
+    impl<
+        'de,
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char
+    >
+    Deserialize<'de> for Wrap<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            Ok(Wrap(base58::deserialize(deserializer)?))
+        }
+    }
+
+    pub fn serialize<
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        S: Serializer,
+    >(x: &Option<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>>, s: S) -> Result<S::Ok, S::Error>
+    {
+        if let Some(x) = x {
+            base58::serialize(x, s)
+        } else {
+            None::<()>.serialize(s)
+        }
+    }
+
+    pub fn deserialize<'de,
+        const LENGTH: usize,
+        const TYPE_PREFIX: u8,
+        const HUMAN_REPRESENTATION_STARTS_WITH: char,
+        D: Deserializer<'de>,
+    >(deserializer: D) -> Result<Option<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>>, D::Error>
+    {
+        let result = Option::<Wrap::<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>>::deserialize(deserializer)?;
+        Ok(result.map(|v| v.0))
     }
 }
