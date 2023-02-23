@@ -1,3 +1,4 @@
+use std::convert::{From, Into};
 use serde_json::{Map, Value};
 use crate::address::{AccountPublicKey, Address};
 use crate::connection::Api;
@@ -14,7 +15,7 @@ pub struct ChannelsRequest {
     limit: Option<u16>,
 }
 
-impl FormatParams for ChannelsRequest {
+impl FormatParams for &ChannelsRequest {
     fn to_json(&self) -> Map<String, Value> {
         let mut j = Map::new();
         j["account"] = Value::String(self.account.encode());
@@ -99,6 +100,6 @@ pub async fn account_channels<'a, A>(
         api_version: Some(1),
         data,
     };
-    let (response, paginator) = Paginator::start(api, request.into()).await?;
+    let (response, paginator) = Paginator::start(api, (&request).into()).await?;
     Ok((response.try_into()?, paginator))
 }
