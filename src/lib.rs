@@ -5,7 +5,7 @@ pub mod request;
 pub mod response;
 pub mod connection;
 pub mod paginate;
-pub mod account;
+pub mod methods;
 
 #[cfg(test)]
 mod tests {

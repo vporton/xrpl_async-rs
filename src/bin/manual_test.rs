@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use reqwest::Client;
 use tokio_stream::StreamExt;
 use workflow_websocket::client::{Options, WebSocket};
-use xrpl_async::account::{account_channels, ChannelsRequest};
+use xrpl_async::methods::account::{account_channels, ChannelsRequest};
 use xrpl_async::address::Address;
 use xrpl_async::connection::{Api, JsonRpcApi, WebSocketApi};
 use xrpl_async::response::{ParseResponseError, WrongFieldsError};
