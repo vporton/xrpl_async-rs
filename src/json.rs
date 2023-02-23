@@ -1,7 +1,7 @@
 use serde_json::Value;
 use crate::address::Address;
 use crate::response::WrongFieldsError;
-use crate::types::Hash;
+use crate::types::{decode_xrp_amount, Hash};
 
 pub(crate) trait ValueExt {
     fn get_valid(&self, key: &str) -> Result<&Value, WrongFieldsError>;
@@ -13,6 +13,7 @@ pub(crate) trait ValueExt {
     fn as_array_valid(&self) -> Result<&Vec<Value>, WrongFieldsError>;
     fn as_hash_valid(&self) -> Result<Hash, WrongFieldsError>;
     fn as_address_valid(&self) -> Result<Address, WrongFieldsError>;
+    fn as_xrp_valid(&self) -> Result<u64, WrongFieldsError>;
 }
 
 impl ValueExt for Value {
@@ -42,6 +43,9 @@ impl ValueExt for Value {
     }
     fn as_address_valid(&self) -> Result<Address, WrongFieldsError> {
         Address::decode(self.as_str_valid()?).map_err(|_| WrongFieldsError::new())
+    }
+    fn as_xrp_valid(&self) -> Result<u64, WrongFieldsError> {
+        decode_xrp_amount(self.as_str_valid()?).map_err(|_| WrongFieldsError::new())
     }
 }
 

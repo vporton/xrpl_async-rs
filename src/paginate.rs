@@ -47,7 +47,6 @@ impl<'a, A: Api, T: PaginatorExtractor + Debug> Paginator<'a, A, T>
         // TODO: Duplicate code:
         let list = T::list_part(&response.result).map_err(|_| WrongFieldsError::new())?.into_iter().map(|e| T::from_json(e))
             .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
-        println!("LIST: {:?}", list); // FIXME: Remove.
         Ok((response, Self::new(api, request, list)))
     }
 }

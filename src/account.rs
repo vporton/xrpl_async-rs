@@ -53,8 +53,8 @@ impl ParseResponse for ChannelResponse {
 #[derive(Debug)]
 pub struct ChannelPaginator {
     pub account: Address,
-    pub amount: f64,
-    pub balance: f64,
+    pub amount: u64,
+    pub balance: u64,
     pub channel_id: Hash,
     pub destination_account: Address,
     pub settle_delay: u64,
@@ -71,8 +71,8 @@ impl ParseResponse for ChannelPaginator {
         // FIXME: Numbers are represented as strings.
         Ok(Self {
             account: value.get_valid("account")?.as_address_valid()?,
-            amount: value.get_valid("amount")?.as_f64_valid()?,
-            balance: value.get_valid("balance")?.as_f64_valid()?,
+            amount: value.get_valid("amount")?.as_xrp_valid()?,
+            balance: value.get_valid("balance")?.as_xrp_valid()?,
             channel_id: value.get_valid("channel_id")?.as_hash_valid()?,
             destination_account: value.get_valid("destination_account")?.as_address_valid()?,
             settle_delay: value.get_valid("settle_delay")?.as_u64_valid()?,
