@@ -49,7 +49,7 @@ impl ParseResponse for CurrenciesResponse {
     }
 }
 
-pub async fn account_channels<'a, A>(api: &'a A, data: &'a CurrenciesRequest)
+pub async fn account_currencies<'a, A>(api: &'a A, data: &'a CurrenciesRequest)
     -> Result<TypedResponse<CurrenciesResponse>, A::Error>
     where A: Api,
           A::Error: From<ParseResponseError> + From<WrongFieldsError>
