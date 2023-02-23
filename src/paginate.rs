@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::fmt::Debug;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use async_trait::async_trait;
@@ -29,7 +30,8 @@ pub struct Paginator<'a, A: Api, T: PaginatorExtractor> where A::Error: From<Par
     marker: Option<Value>,
 }
 
-impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
+// TODO: Remove `Debug`.
+impl<'a, A: Api, T: PaginatorExtractor + Debug> Paginator<'a, A, T>
     where A::Error: From<ParseResponseError> + From<WrongFieldsError>
 {
     fn new(api: &'a A, request: Request<'a>, first_page_list: VecDeque<T>) -> Self {
@@ -45,6 +47,7 @@ impl<'a, A: Api, T: PaginatorExtractor> Paginator<'a, A, T>
         // TODO: Duplicate code:
         let list = T::list_part(&response.result).map_err(|_| WrongFieldsError::new())?.into_iter().map(|e| T::from_json(e))
             .collect::<Result<Vec<T>, ParseResponseError>>()?.into();
+        println!("LIST: {:?}", list); // FIXME: Remove.
         Ok((response, Self::new(api, request, list)))
     }
 }

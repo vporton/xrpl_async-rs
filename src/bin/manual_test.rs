@@ -10,7 +10,7 @@ async fn main() {
     let http_client = Client::new();
     let api = JsonRpcApi::new(http_client, "http://s1.ripple.com:51234/".to_owned());
     let request = ChannelsRequest {
-        account: Address::decode("r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59").unwrap(),
+        account: Address::decode("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn").unwrap(),
         destination_account: None,
         ledger: Ledger::Validated,
         limit: None,
@@ -19,5 +19,5 @@ async fn main() {
     println!("{:?}", response);
     while let Some(item) = paginator.next().await {
         let item = item.unwrap();
-        println!("{:?}", item);
+        println!("- {:?}", item);
     }}
