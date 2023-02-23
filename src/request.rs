@@ -75,7 +75,7 @@ impl<'a> FormatRequest for Request<'a> {
         }
         json!({
             "method": self.command,
-            "params": self.params,
+            "params": [self.params], // yes, the docs say use one-item array
         })
     }
 }
