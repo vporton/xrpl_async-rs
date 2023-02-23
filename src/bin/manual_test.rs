@@ -34,7 +34,7 @@ async fn main() {
 
     println!("** WebSocketApi **");
     let ws = WebSocket::new("wss://s1.ripple.com/", Options::default()).unwrap();
-    ws.connect(true).await.unwrap(); // TODO: Move it into `WebSocketApi::new`?
+    ws.connect(true).await.unwrap();
     let api = WebSocketApi::new(ws);
     basic_test(&api).await;
 }
