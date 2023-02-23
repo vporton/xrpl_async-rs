@@ -80,7 +80,6 @@ impl Api for JsonRpcApi {
     }
 }
 
-// TODO: Handling server-side disconnection (e.g. on rate-limiting).
 // TODO: Is this efficient?
 pub struct WebSocketApi {
     client: WebSocket,
@@ -174,9 +173,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                         return Ok(response);
                     }
                 },
-                _ => {
-                    return Err(WrongFieldsError::new().into()); // TODO: not the best error
-                },
+                Message::Binary(msg) => {},
             }
         }
     }
