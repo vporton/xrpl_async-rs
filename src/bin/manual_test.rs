@@ -9,6 +9,10 @@ use xrpl_async::types::Ledger;
 async fn main() {
     let http_client = Client::new();
     let api = JsonRpcApi::new(http_client, "http://s1.ripple.com:51234/".to_owned());
+    // TODO: Does not work:
+    // let ws = WebSocket::new("wss://s1.ripple.com/", Options::default()).unwrap();
+    // ws.connect(true).await.unwrap();
+    // let api = WebSocketApi::new(ws);
     let request = ChannelsRequest {
         account: Address::decode("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn").unwrap(),
         destination_account: None,
