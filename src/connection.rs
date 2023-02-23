@@ -141,7 +141,7 @@ struct WebSocketMessageWaiterWithoutDrop<'a> {
 
 impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
     pub async fn create(api: &'a WebSocketApi, request: Request<'a>)
-        -> Result<WebSocketMessageWaiterWithoutDrop<'a>, WebSocketApiError>
+                        -> Result<WebSocketMessageWaiterWithoutDrop<'a>, WebSocketApiError>
     {
         let id = api.id.get().get();
         api.id.get().set(id + 1);
@@ -159,18 +159,25 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
     pub async fn wait(&self) -> Result<Response, WebSocketApiError> {
         loop {
             // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
-            if let Message::Text(msg) = self.api.client.recv().await? {
-                let response = StreamedResponse::from_string(&msg)?;
-                // TODO: Check `unsafe`s again.
-                unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.response);
-                if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
-                    return Ok(response);
-                }
-            } else {
-                return Err(WrongFieldsError::new().into()); // TODO: not the best error
+            match self.api.client.recv().await? {
+                Message::Open => {},
+                Message::Close => {
+                    // TODO:
+                    // self.api.responses.get_mut().get_mut().clear();
+                },
+                Message::Text(msg) => {
+                    let response = StreamedResponse::from_string(&msg)?;
+                    // TODO: Check `unsafe`s again.
+                    unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.response);
+                    if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
+                        return Ok(response);
+                    }
+                },
+                _ => {
+                    return Err(WrongFieldsError::new().into()); // TODO: not the best error
+                },
             }
         }
-
     }
     pub fn do_drop(&mut self) {
         // TODO: Check `unsafe` again.
@@ -184,7 +191,7 @@ pub struct WebSocketMessageWaiter<'a>(WebSocketMessageWaiterWithoutDrop<'a>);
 
 impl<'a> WebSocketMessageWaiter<'a> {
     pub async fn create(api: &'a WebSocketApi, request: Request<'a>)
-        -> Result<WebSocketMessageWaiter<'a>, WebSocketApiError>
+                        -> Result<WebSocketMessageWaiter<'a>, WebSocketApiError>
     {
         Ok(Self(WebSocketMessageWaiterWithoutDrop::create(api, request).await?))
     }
