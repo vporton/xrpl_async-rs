@@ -8,29 +8,32 @@ use crate::paginate::{Paginator, PaginatorExtractor};
 use crate::request::{FormatParams, TypedRequest};
 use crate::response::{ParseResponse, ParseResponseError, TypedResponse, WrongFieldsError};
 
+#[derive(Debug)]
 pub struct ChannelsRequest {
-    account: Address,
-    destination_account: Option<Address>,
-    ledger: Ledger,
-    limit: Option<u16>,
+    pub account: Address,
+    pub destination_account: Option<Address>,
+    pub ledger: Ledger,
+    pub limit: Option<u16>,
 }
 
 impl FormatParams for &ChannelsRequest {
     fn to_json(&self) -> Map<String, Value> {
         let mut j = Map::new();
-        j["account"] = Value::String(self.account.encode());
+        // TODO: Move to `lazy_static`.
+        j.insert("account".to_owned(), Value::String(self.account.encode()));
         if let Some(address) = &self.destination_account {
-            j["destination_account"] = address.encode().into();
+            j.insert("destination_account".to_owned(), address.encode().into());
         }
         if let Some(limit) = self.limit {
-            j["limit"] = limit.into();
+            j.insert("limit".to_owned(), limit.into());
         }
         let (ledger_key, ledger_value) = self.ledger.to_json();
-        j[ledger_key] = ledger_value;
+        j.insert(ledger_key.to_owned(), ledger_value);
         j
     }
 }
 
+#[derive(Debug)]
 pub struct ChannelResponse {
     pub ledger_hash: Option<Hash>,
     pub ledger_index: Option<u32>,

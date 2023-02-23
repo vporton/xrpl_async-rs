@@ -7,7 +7,7 @@ lazy_static! {
     static ref COMMAND_KEY: String = "command".to_string();
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Request<'a> {
     pub command: &'a str,
     pub api_version: Option<u32>,
@@ -15,7 +15,7 @@ pub struct Request<'a> {
 }
 
 /// For JSON RPC.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TypedRequest<'a, T> {
     pub command: &'a str,
     pub api_version: Option<u32>,
@@ -61,6 +61,7 @@ pub trait FormatParams {
 
 /// For WebSocket.
 /// TODO: `pub`?
+#[derive(Debug)]
 pub struct StreamedRequest<'a> {
     pub request: Request<'a>,
     pub id: u64, // TODO: `pub`?
@@ -70,7 +71,7 @@ impl<'a> FormatRequest for Request<'a> {
     fn to_json(&self) -> Value {
         let mut params = serde_json::Map::<String, Value>::new();
         if let Some(api_version) = self.api_version {
-            params[&*API_VERSION_KEY] = Value::String(api_version.to_string());
+            params.insert(API_VERSION_KEY.clone(), Value::String(api_version.to_string())); // TODO: Don't clone.
         }
         json!({
             "method": self.command,
@@ -82,13 +83,14 @@ impl<'a> FormatRequest for Request<'a> {
 impl<'a> FormatRequest for StreamedRequest<'a> {
     fn to_json(&self) -> Value {
         let mut params = serde_json::Map::<String, Value>::new();
-        params[&*ID_KEY] = Value::Number(Number::from(self.id));
-        params[&*COMMAND_KEY] = Value::String(self.request.command.to_owned());
+        // TODO: Don't clone
+        params.insert(ID_KEY.clone(), Value::Number(Number::from(self.id)));
+        params.insert(COMMAND_KEY.clone(), Value::String(self.request.command.to_owned()));
         if let Some(api_version) = self.request.api_version {
-            params[&*API_VERSION_KEY] = Value::String(api_version.to_string());
+            params.insert(API_VERSION_KEY.clone(), Value::String(api_version.to_string()));
         }
         for (key, value) in &self.request.params {
-            params[key] = value.to_owned();
+            params.insert(key.clone(), value.to_owned());
         }
         json!(params)
     }

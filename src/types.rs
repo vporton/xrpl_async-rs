@@ -5,6 +5,7 @@ use hex::{decode, FromHexError};
 use derive_more::From;
 use serde_json::{json, Value};
 
+#[derive(Debug)]
 pub struct Hash([u8; 32]);
 
 impl ToString for Hash {
@@ -71,6 +72,7 @@ pub fn xrp_to_human_representation(amount: u64) -> String {
 
 // TODO: Unit tests.
 
+#[derive(Debug)]
 pub enum Ledger {
     Index(u32),
     Hash(Hash),

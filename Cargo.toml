@@ -3,8 +3,12 @@ name = "xrpl_async"
 version = "0.0.1"
 edition = "2021"
 
+[[bin]]
+name = "manual_test"
+test = true
+
 [dependencies]
-base58check = "0.1.0"
+#base58check = "0.1.0" # BitCoin not XRPL format
 #derive = "1.0.0"
 derive_more = "0.99.17"
 serde_json = "1.0.93"
@@ -15,3 +19,5 @@ workflow-websocket = "0.3.10"
 fragile = "2.0.0"
 tokio-stream = "0.1.11"
 hex = "0.4.3"
+tokio = "1.25.0"
+xrpl-rust = "0.1.1"

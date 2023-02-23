@@ -2,8 +2,9 @@ use std::array::TryFromSliceError;
 use std::iter::once;
 // use derive::Debug;
 use derive_more::From;
-use base58check::{FromBase58Check, FromBase58CheckError, ToBase58Check};
 use hex::FromHexError;
+use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
+use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
 
 #[derive(Debug)]
 pub struct WrongPrefixError;
@@ -16,12 +17,13 @@ impl WrongPrefixError {
 
 #[derive(Debug, From)]
 pub enum FromXRPDecodingError {
-    FromBase58Check(FromBase58CheckError),
+    FromBase58Check(XRPLAddressCodecException),
     Hex(FromHexError),
     WrongPrefix(WrongPrefixError),
     WrongLength(TryFromSliceError),
 }
 
+#[derive(Debug)]
 pub struct Encoding<
     const LENGTH: usize,
     const TYPE_PREFIX: u8,
@@ -48,13 +50,14 @@ impl<
         once(TYPE_PREFIX).chain(self.bytes_without_prefix()).collect()
     }
     pub fn encode(&self) -> String {
-        (&self.bytes_without_prefix() as &[u8]).to_base58check(Self::TYPE_PREFIX)
+        // (&self.bytes_without_prefix() as &[u8]).to_base58check(Self::TYPE_PREFIX)
+        encode_base58(&self.bytes_without_prefix() as &[u8], &[Self::TYPE_PREFIX], Some(LENGTH)).unwrap()
     }
     pub fn decode(s: &str) -> Result<Self, FromXRPDecodingError> {
-        let (prefix, bytes) = s.from_base58check()?;
-        if prefix != Self::TYPE_PREFIX {
-            return Err(WrongPrefixError::new().into());
-        }
+        let bytes = decode_base58(s, &[Self::TYPE_PREFIX]).map_err(|_| WrongPrefixError::new())?;
+        // if prefix != Self::TYPE_PREFIX {
+        //     return Err(WrongPrefixError::new().into());
+        // }
         Ok(Self::from_bytes_without_prefix(bytes.as_slice().try_into()?))
     }
     pub fn encode_hex(&self) -> String {

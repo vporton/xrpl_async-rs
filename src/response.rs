@@ -29,6 +29,7 @@ pub enum ParseResponseError {
 }
 
 /// For JSON RPC.
+#[derive(Debug)]
 pub struct Response {
     pub result: Value,
     pub load: bool,
@@ -36,6 +37,7 @@ pub struct Response {
     pub forwarded: bool,
 }
 
+#[derive(Debug)]
 pub struct TypedResponse<T> {
     pub result: T,
     pub load: bool,
@@ -76,6 +78,7 @@ pub trait ParseResponse: Sized {
 }
 
 /// For WebSocket.
+#[derive(Debug)]
 pub struct StreamedResponse {
     pub response: Response,
     pub id: u64,
