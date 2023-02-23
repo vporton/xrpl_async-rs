@@ -114,7 +114,6 @@ trait Paginated<Api, Element> {
     fn get_list_one_page(result: &Value) -> Vec<Element> {
         Self::get_raw_list_one_page(result).into_iter().map(|e| Self::parse_element(e)).collect()
     }
-    // FIXME
     // async fn get_full_list(api: &Api, request: Request<'async_trait>) {
     //     let result = api.call(request).await?;
     //     yield from get_list_one_page(&result);

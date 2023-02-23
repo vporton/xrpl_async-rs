@@ -1,6 +1,5 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
-use std::sync::Arc;
 use fragile::Fragile;
 use derive_more::From;
 use serde_json::Value;
@@ -103,7 +102,6 @@ impl WebSocketApi {
 #[derive(Debug, From)]
 pub enum WebSocketApiError {
     WebSocketFail(workflow_websocket::client::Error),
-    WebSocketFail2(Arc<workflow_websocket::client::Error>),
     Parse(ParseResponseError),
 }
 
@@ -149,8 +147,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             id,
             request,
         };
-        // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
-        api.client.send(full_request.to_string()?.into()).await?; // Why do they use `Arc`?
+        api.client.post(full_request.to_string()?.into()).await?;
         Ok(Self {
             id,
             api,
@@ -158,7 +155,6 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
     }
     pub async fn wait(&self) -> Result<Response, WebSocketApiError> {
         loop {
-            // FIXME: "This function will block until until the message was relayed to the underlying websocket implementation." - ?
             match self.api.client.recv().await? {
                 Message::Open => {},
                 Message::Close => {
