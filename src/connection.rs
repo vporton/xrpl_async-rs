@@ -8,23 +8,18 @@ use async_trait::async_trait;
 use reqwest::{Client, StatusCode};
 use serde::{de, Deserialize};
 use workflow_websocket::client::{Message, WebSocket};
+use derive_more::From;
 use crate::connection::MyError::Connection;
 use crate::request::{Request, StreamedRequest};
 use crate::response::{Response, StreamedResponse};
 
+/// Status not `"success"`
 #[derive(Debug)]
-pub struct XrpError {
-    error_code: String,
-}
+pub struct XrpError;
 
 impl XrpError {
-    pub fn new(error_code: String) -> Self {
-        Self {
-            error_code,
-        }
-    }
-    pub fn error_code(self) -> String {
-        self.error_code
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
@@ -55,9 +50,10 @@ impl JsonRpcApi {
 
 // TODO: Rename.
 // TODO: Analyze diligently
-#[derive(Debug)]
+#[derive(Debug, From)]
 pub enum MyError {
     Message(String),
+    #[from(ignore)]
     Connection(String),
     Json,
     HttpStatus(StatusCode),
