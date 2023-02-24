@@ -15,7 +15,7 @@ pub struct CurrenciesRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct CurrenciesResponse {
-    pub ledger_hash: Option<Hash>,
+    pub ledger_hash: Option<Hash<32>>,
     pub ledger_index: Option<u32>,
     pub receive_currencies: Vec<String>,
     pub send_currencies: Vec<String>,

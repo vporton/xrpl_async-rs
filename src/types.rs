@@ -9,9 +9,9 @@ use serde::ser::SerializeMap;
 use serde_json::json;
 
 #[derive(Clone, Debug)]
-pub struct Hash([u8; 32]);
+pub struct Hash<const LENGTH: usize>([u8; LENGTH]);
 
-impl ToString for Hash {
+impl<const LENGTH: usize> ToString for Hash<LENGTH> {
     fn to_string(&self) -> String {
         hex::encode_upper(self.0)
     }
@@ -23,13 +23,13 @@ pub enum HexDecodeError {
     Slice(TryFromSliceError),
 }
 
-impl Hash {
+impl<const LENGTH: usize> Hash<LENGTH> {
     pub fn from_hex(s: &str) -> Result<Self, HexDecodeError> {
         Ok(Self(decode(s)?.as_slice().try_into()?))
     }
 }
 
-impl Serialize for Hash {
+impl<const LENGTH: usize> Serialize for Hash<LENGTH> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -38,10 +38,10 @@ impl Serialize for Hash {
     }
 }
 
-struct HashVisitor;
+struct HashVisitor<const LENGTH: usize>;
 
-impl<'de> Visitor<'de> for HashVisitor {
-    type Value = Hash;
+impl<'de, const LENGTH: usize> Visitor<'de> for HashVisitor<LENGTH> {
+    type Value = Hash<LENGTH>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a hex hash")
@@ -54,8 +54,8 @@ impl<'de> Visitor<'de> for HashVisitor {
     }
 }
 
-impl<'de> Deserialize<'de> for Hash {
-    fn deserialize<D>(deserializer: D) -> Result<Hash, D::Error>
+impl<'de, const LENGTH: usize> Deserialize<'de> for Hash<LENGTH> {
+    fn deserialize<D>(deserializer: D) -> Result<Hash<LENGTH>, D::Error>
         where D: Deserializer<'de>,
     {
         deserializer.deserialize_str(HashVisitor)
@@ -156,7 +156,7 @@ pub fn xrp_to_human_representation(amount: u64) -> String {
 #[derive(Clone, Debug)]
 pub enum Ledger {
     Index(u32),
-    Hash(Hash),
+    Hash(Hash<32>),
     Validated,
     Closed,
     Current,

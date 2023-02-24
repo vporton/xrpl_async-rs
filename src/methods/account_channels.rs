@@ -20,7 +20,7 @@ pub struct ChannelsRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct ChannelResponse {
-    pub ledger_hash: Option<Hash>,
+    pub ledger_hash: Option<Hash<32>>,
     pub ledger_index: Option<u32>,
     pub validated: Option<bool>,
 }
@@ -30,7 +30,7 @@ pub struct ChannelPaginator {
     pub account: Address,
     pub amount: u64,
     pub balance: u64,
-    pub channel_id: Hash,
+    pub channel_id: Hash<32>,
     pub destination_account: Address,
     pub settle_delay: u64,
     pub public_key: Option<AccountPublicKey>,
@@ -50,7 +50,7 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
             pub amount: u64,
             #[serde(with = "crate::types::xrp")]
             pub balance: u64,
-            pub channel_id: Hash,
+            pub channel_id: Hash<32>,
             pub destination_account: Address,
             pub settle_delay: u64,
             #[serde(with = "crate::address::option_base58")]

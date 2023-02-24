@@ -7,7 +7,7 @@ pub struct AccountRoot {
     #[serde(rename = "Account")]
     pub account: Address,
     #[serde(rename = "AccountTxnID")]
-    pub account_txn_id: Option<Hash>,
+    pub account_txn_id: Option<Hash<32>>,
     #[serde(rename = "Balance")]
     #[serde(with = "crate::types::option_xrp")]
     pub balance: Option<u64>,
