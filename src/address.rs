@@ -145,8 +145,6 @@ pub mod hex {
         D: Deserializer<'de>,
     >(deserializer: D) -> Result<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>, D::Error>
     {
-        use serde::de::Error;
-
         String::deserialize(deserializer)
             .and_then(|string| Encoding::decode_hex(&string).map_err(de::Error::custom))
     }
@@ -173,8 +171,6 @@ pub mod base58 {
         D: Deserializer<'de>,
     >(deserializer: D) -> Result<Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>, D::Error>
     {
-        use serde::de::Error;
-
         String::deserialize(deserializer)
             .and_then(|string| Encoding::decode(&string).map_err(de::Error::custom))
     }

@@ -2,7 +2,7 @@ use std::array::TryFromSliceError;
 use std::iter::{once, repeat};
 use std::num::ParseIntError;
 use hex::{decode, FromHexError};
-use derive_more::From;
+use derive_more::{Display, From};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Visitor;
 use serde::ser::SerializeMap;
@@ -17,7 +17,7 @@ impl ToString for Hash {
     }
 }
 
-#[derive(Debug, From)]
+#[derive(Debug, From, Display)]
 pub enum HexDecodeError {
     Hex(FromHexError),
     Slice(TryFromSliceError),
