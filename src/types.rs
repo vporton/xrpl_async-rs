@@ -88,6 +88,33 @@ pub mod xrp {
     }
 }
 
+pub mod option_xrp {
+    use super::*;
+
+    struct Wrap(u64);
+
+    impl<'de> Deserialize<'de> for Wrap {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            Ok(Wrap(xrp::deserialize(deserializer)?))
+        }
+    }
+
+    pub fn serialize<S: Serializer>(x: &Option<u64>, s: S) -> Result<S::Ok, S::Error>
+    {
+        if let Some(x) = x {
+            xrp::serialize(x, s)
+        } else {
+            None::<()>.serialize(s)
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<u64>, D::Error>
+    {
+        let result = Option::<Wrap>::deserialize(deserializer)?;
+        Ok(result.map(|v| v.0))
+    }
+}
+
 const XPR_DIGITS_AFTER_DOT: usize = 6;
 
 #[derive(Debug)]
