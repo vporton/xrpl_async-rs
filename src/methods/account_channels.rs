@@ -1,38 +1,22 @@
 // extern crate serde;
 use std::convert::{From, Into};
-use serde::{Deserialize, Deserializer};
-use serde_json::{Map, Value};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use crate::address::{AccountPublicKey, Address};
 use crate::connection::Api;
 use crate::types::{Hash, Ledger};
 use crate::json::ValueExt;
 use crate::paginate::{Paginator, PaginatorExtractor};
-use crate::request::{FormatParams, TypedRequest};
+use crate::request::TypedRequest;
 use crate::response::{ParseResponseError, TypedResponse, WrongFieldsError};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct ChannelsRequest {
     pub account: Address,
     pub destination_account: Option<Address>,
+    #[serde(flatten)]
     pub ledger: Ledger,
     pub limit: Option<u16>,
-}
-
-impl FormatParams for &ChannelsRequest {
-    fn to_json(&self) -> Map<String, Value> {
-        let mut j = Map::new();
-        // TODO: Move to `lazy_static`.
-        j.insert("account".to_owned(), Value::String(self.account.encode()));
-        if let Some(address) = &self.destination_account {
-            j.insert("destination_account".to_owned(), address.encode().into());
-        }
-        if let Some(limit) = self.limit {
-            j.insert("limit".to_owned(), limit.into());
-        }
-        let (ledger_key, ledger_value) = self.ledger.to_json();
-        j.insert(ledger_key.to_owned(), ledger_value);
-        j
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -114,6 +98,7 @@ pub async fn account_channels<'a, A>(
         api_version: Some(1),
         data,
     };
-    let (response, paginator) = Paginator::start(api, (&request).into()).await?;
+    let (response, paginator) =
+        Paginator::start(api, (&request).try_into().map_err(|_| WrongFieldsError::new())?).await?; // TODO: wrong error
     Ok((response.try_into()?, paginator))
 }

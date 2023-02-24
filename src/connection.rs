@@ -8,7 +8,7 @@ use reqwest::Client;
 use serde::Deserialize;
 use workflow_websocket::client::{Message, WebSocket};
 use crate::response::ParseResponseError::HttpStatus;
-use crate::request::{FormatRequest, Request, StreamedRequest};
+use crate::request::{Request, StreamedRequest};
 use crate::response::{ParseResponseError, Response, StreamedResponse, WrongFieldsError};
 
 #[derive(Debug)]
@@ -76,7 +76,7 @@ impl Api for JsonRpcApi {
     #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
-            .body(request.to_string()?)
+            .body(serde_json::to_string(&request)?)
             .send().await?;
         if !result.status().is_success() {
             return Err(HttpStatus(result.status()).into());
@@ -154,7 +154,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             id,
             request,
         };
-        api.client.post(full_request.to_string()?.into()).await?;
+        api.client.post(serde_json::to_string(&full_request)?.into()).await?;
         Ok(Self {
             id,
             api,
@@ -223,13 +223,13 @@ mod tests {
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: serde_json::Map::new(),
+                params: serde_json::Map::new().into(),
             });
         let _waiter2 =
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: serde_json::Map::new(),
+                params: serde_json::Map::new().into(),
             });
     }
 }

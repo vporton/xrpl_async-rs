@@ -116,7 +116,11 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
             };
             if let Some(marker) = marker {
                 let mut request = this.request.clone();
-                request.params.insert(MARKER_KEY.clone(), marker);
+                if let Value::Object(obj) = request.params {
+                    let mut m = obj.clone();
+                    m.insert(MARKER_KEY.clone(), marker); // FIXME: works or modifies a copy?
+                    request.params = Value::Object(m);
+                }
                 loader(&request)
             } else {
                 Poll::Ready(None)

@@ -5,7 +5,8 @@ use hex::{decode, FromHexError};
 use derive_more::From;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Visitor;
-use serde_json::{json, Value};
+use serde::ser::SerializeMap;
+use serde_json::json;
 
 #[derive(Clone, Debug)]
 pub struct Hash([u8; 32]);
@@ -136,14 +137,16 @@ pub enum Ledger {
     Current,
 }
 
-impl Ledger {
-    pub fn to_json(&self) -> (&str, Value) {
+impl Serialize for Ledger {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let mut map = serializer.serialize_map(Some(1))?;
         match self {
-            Ledger::Index(ind) => ("ledger_index", json!(ind)),
-            Ledger::Hash(hash) => ("ledger_hash", Value::String(hash.to_string())),
-            Ledger::Validated => ("ledger_index", Value::String("validated".to_owned())),
-            Ledger::Closed => ("ledger_index", Value::String("closed".to_owned())),
-            Ledger::Current => ("ledger_index", Value::String("current".to_owned())),
+            Ledger::Index(ind) => map.serialize_entry("ledger_index", &json!(ind))?,
+            Ledger::Hash(hash) => map.serialize_entry("ledger_hash", &json!(hash))?,
+            Ledger::Validated => map.serialize_entry("ledger_index", &json!("validated"))?,
+            Ledger::Closed => map.serialize_entry("ledger_index", &json!("closed"))?,
+            Ledger::Current => map.serialize_entry("ledger_index", &json!("current"))?,
         }
+        map.end()
     }
 }

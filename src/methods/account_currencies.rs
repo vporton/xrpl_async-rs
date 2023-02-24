@@ -4,7 +4,7 @@ use serde_json::{Map, Value};
 use crate::address::Address;
 use crate::connection::Api;
 use crate::types::{Hash, Ledger};
-use crate::request::{FormatParams, TypedRequest};
+use crate::request::TypedRequest;
 use crate::response::{ParseResponseError, TypedResponse, WrongFieldsError};
 
 #[derive(Debug)]
@@ -13,8 +13,9 @@ pub struct CurrenciesRequest {
     pub ledger: Ledger,
 }
 
-impl FormatParams for &CurrenciesRequest {
-    fn to_json(&self) -> Map<String, Value> {
+// TODO
+impl Serializer for CurrenciesRequest {
+    fn to_json(&self) -> Value {
         let mut j = Map::new();
         // TODO: Move to `lazy_static`.
         j.insert("account".to_owned(), Value::String(self.account.encode()));
