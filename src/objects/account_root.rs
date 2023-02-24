@@ -3,6 +3,7 @@ use crate::address::{AccountPublicKey, Address};
 use crate::types::Hash;
 use crate::types::xrp::deserialize;
 
+#[derive(Debug)]
 pub struct Flags(u32);
 // TODO: Values of flags: https://xrpl.org/accountroot.html
 
@@ -12,7 +13,7 @@ impl<'de> Deserialize<'de> for Flags {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AccountRoot {
     #[serde(rename = "Account")]
     pub account: Address,
