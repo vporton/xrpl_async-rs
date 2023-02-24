@@ -2,25 +2,25 @@ use std::collections::VecDeque;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use lazy_static::lazy_static;
-use serde::Deserialize;
+use serde::{de, Deserialize};
 use serde_json::Value;
 use tokio_stream::Stream;
-use crate::connection::Api;
+use crate::connection::{Api, MyError};
 use crate::request::Request;
-use crate::response::{ParseResponseError, Response, TypedResponse, WrongFieldsError};
+use crate::response::{Response, TypedResponse};
 
 lazy_static! {
     static ref MARKER_KEY: String = "marker".to_string();
 }
 
 pub trait PaginatorExtractor<'de>: Deserialize<'de> + Unpin {
-    fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError>;
-    fn list(result: &Value) -> Result<&Vec<Value>, WrongFieldsError> {
-        Ok(Self::list_obj(result)?.as_array().ok_or(WrongFieldsError::new())?)
+    fn list_obj(result: &Value) -> Result<&Value, MyError>;
+    fn list(result: &Value) -> Result<&Vec<Value>, MyError> {
+        Ok(Self::list_obj(result)?.as_array().ok_or::<MyError>(de::Error::custom("expected array"))?)
     }
 }
 
-pub struct Paginator<'a, A: Api, T: PaginatorExtractor<'a>> where A::Error: From<ParseResponseError> {
+pub struct Paginator<'a, A: Api, T: PaginatorExtractor<'a>> where A::Error: From<MyError> {
     api: &'a A,
     request: Request<'a>,
     list: VecDeque<T>, // more efficient than `Vec`
@@ -28,7 +28,7 @@ pub struct Paginator<'a, A: Api, T: PaginatorExtractor<'a>> where A::Error: From
 }
 
 impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
-    where A::Error: From<ParseResponseError> + From<WrongFieldsError>
+    where A::Error: From<MyError>
 {
     fn new(api: &'a A, request: Request<'a>, first_page_list: VecDeque<T>) -> Self {
         Self {
@@ -43,10 +43,10 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
         // TODO: Duplicate code:
         // TODO: Can do without `clone`?
         let list = T::list(&response.result)
-            .map_err(|_| WrongFieldsError::new())?
+            .map_err(de::Error::custom)?
             .into_iter()
-            .map(|e| T::deserialize(e.clone()).map_err(|_| WrongFieldsError::new().into()))
-            .collect::<Result<Vec<T>, ParseResponseError>>()?
+            .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
+            .collect::<Result<Vec<T>, MyError>>().map_err::<MyError, _>(de::Error::custom)?
             .into();
         Ok((response, Self::new(api, request, list)))
     }
@@ -55,17 +55,17 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
         // TODO: Duplicate code:
         // TODO: Can do without `clone`?
         let list: Vec<T> = T::list(&response.result)
-            .map_err(|_| WrongFieldsError::new())?
+            .map_err(de::Error::custom)?
             .into_iter()
-            .map(|e| T::deserialize(e.clone()).map_err(|_| WrongFieldsError::new().into()))
-            .collect::<Result<Vec<T>, ParseResponseError>>()?
+            .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
+            .collect::<Result<Vec<T>, MyError>>().map_err::<MyError, _>(de::Error::custom)?
             .into();
         Ok((response, list))
     }
 }
 
 impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
-    where A::Error: From<ParseResponseError> + From<WrongFieldsError>
+    where A::Error: From<MyError>
 {
     type Item = Result<TypedResponse<T>, A::Error>;
     fn poll_next(
@@ -92,10 +92,10 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                         // TODO: Duplicate code:
                         // TODO: Can do without `clone`?
                         this.list = T::list(&response.result)
-                            .map_err(|_| WrongFieldsError::new())?
+                            .map_err(de::Error::custom)?
                             .into_iter()
-                            .map(|e| T::deserialize(e.clone()).map_err(|_| WrongFieldsError::new().into()))
-                            .collect::<Result<Vec<T>, ParseResponseError>>()?
+                            .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
+                            .collect::<Result<Vec<T>, MyError>>()?
                             .into();
                         this.marker = response.result.get(&*MARKER_KEY).map(|v| v.clone());
                         if let Some(front) = this.list.pop_front() {

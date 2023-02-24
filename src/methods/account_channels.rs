@@ -1,13 +1,13 @@
 // extern crate serde;
 use std::convert::{From, Into};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use crate::address::{AccountPublicKey, Address};
-use crate::connection::Api;
+use crate::connection::{Api, MyError};
 use crate::types::{Hash, Ledger};
 use crate::paginate::{Paginator, PaginatorExtractor};
 use crate::request::TypedRequest;
-use crate::response::{ParseResponseError, TypedResponse, WrongFieldsError};
+use crate::response::TypedResponse;
 
 #[derive(Debug, Serialize)]
 pub struct ChannelsRequest {
@@ -80,8 +80,8 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
 }
 
 impl<'a> PaginatorExtractor<'a> for ChannelPaginator {
-    fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError> {
-        Ok(result.get("channels").ok_or(WrongFieldsError::new())?)
+    fn list_obj(result: &Value) -> Result<&Value, MyError> {
+        Ok(result.get("channels").ok_or::<MyError>(de::Error::custom("No `channels` field."))?)
     }
 }
 
@@ -90,7 +90,7 @@ pub async fn account_channels<'a, A>(
     data: &'a ChannelsRequest,
 ) -> Result<(TypedResponse<ChannelResponse>, Paginator<'a, A, ChannelPaginator>), A::Error>
     where A: Api,
-          A::Error: From<ParseResponseError> + From<WrongFieldsError>
+          A::Error: From<MyError>
 {
     let request = TypedRequest {
         command: "account_channels",
@@ -98,6 +98,6 @@ pub async fn account_channels<'a, A>(
         data,
     };
     let (response, paginator) =
-        Paginator::start(api, (&request).try_into().map_err(|_| WrongFieldsError::new())?).await?; // TODO: wrong error
+        Paginator::start(api, (&request).try_into().map_err(de::Error::custom)?).await?; // TODO: wrong error
     Ok((response.try_into()?, paginator))
 }

@@ -1,15 +1,16 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Display;
 use fragile::Fragile;
-use derive_more::From;
 use serde_json::Value;
 use async_trait::async_trait;
-use reqwest::Client;
-use serde::Deserialize;
+use reqwest::{Client, StatusCode};
+use serde::{de, Deserialize};
 use workflow_websocket::client::{Message, WebSocket};
-use crate::response::ParseResponseError::HttpStatus;
+use crate::connection::MyError::Connection;
 use crate::request::{Request, StreamedRequest};
-use crate::response::{ParseResponseError, Response, StreamedResponse, WrongFieldsError};
+use crate::response::{Response, StreamedResponse};
 
 #[derive(Debug)]
 pub struct XrpError {
@@ -30,7 +31,7 @@ impl XrpError {
 /// `E` is error
 #[async_trait]
 pub trait Api {
-    type Error;
+    type Error: From<MyError>;
     #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, Self::Error>;
     // async fn call_typed<'a, T: Into<Request<'a>>, U: TryFrom<Response>>(&self, request: T) -> Result<U, Self::Error> {
@@ -52,21 +53,47 @@ impl JsonRpcApi {
     }
 }
 
-#[derive(Debug, From)]
-pub enum JsonRpcApiError {
-    Reqwest(reqwest::Error),
-    Parse(ParseResponseError),
+// TODO: Rename.
+// TODO: Analyze diligently
+#[derive(Debug)]
+pub enum MyError {
+    Message(String),
+    Connection(String),
+    Json,
+    HttpStatus(StatusCode),
+    Disconnect, // WebSocket disconnect
+    Xrp(XrpError),
 }
 
-impl From<WrongFieldsError> for JsonRpcApiError {
-    fn from(value: WrongFieldsError) -> Self {
-        Self::Parse(value.into())
+pub type JsonRpcApiError = MyError; // TODO
+
+impl de::Error for MyError {
+    fn custom<T: Display>(msg: T) -> Self {
+        MyError::Message(msg.to_string())
+    }
+}
+
+impl std::error::Error for MyError {}
+
+impl Display for MyError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MyError::Message(msg) => formatter.write_str(msg),
+            other => formatter.write_str(&format!("{:?}", other)), // TODO
+            /* and so forth */
+        }
     }
 }
 
 impl From<serde_json::Error> for JsonRpcApiError {
-    fn from(value: serde_json::Error) -> Self {
-        Self::Parse(value.into())
+    fn from(_value: serde_json::Error) -> Self {
+        Self::Json
+    }
+}
+
+impl From<reqwest::Error> for JsonRpcApiError {
+    fn from(value: reqwest::Error) -> Self {
+        Self::Connection(value.to_string())
     }
 }
 
@@ -79,7 +106,7 @@ impl Api for JsonRpcApi {
             .body(serde_json::to_string(&request)?)
             .send().await?;
         if !result.status().is_success() {
-            return Err(HttpStatus(result.status()).into());
+            return Err(JsonRpcApiError::HttpStatus(result.status()));
         }
         Ok(Response::deserialize(&result.json::<Value>().await?)?)
     }
@@ -101,28 +128,11 @@ impl WebSocketApi {
         }
     }
     pub async fn reconnect(&self) -> Result<(), WebSocketApiError> {
-        Ok(self.client.reconnect().await?)
+        Ok(self.client.reconnect().await.map_err(|e| MyError::Connection(e.to_string()))?)
     }
 }
 
-#[derive(Debug, From)]
-pub enum WebSocketApiError {
-    WebSocketFail(workflow_websocket::client::Error),
-    Parse(ParseResponseError),
-    Disconnect,
-}
-
-impl From<WrongFieldsError> for WebSocketApiError {
-    fn from(value: WrongFieldsError) -> Self {
-        Self::Parse(value.into())
-    }
-}
-
-impl From<serde_json::Error> for WebSocketApiError {
-    fn from(value: serde_json::Error) -> Self {
-        Self::Parse(value.into())
-    }
-}
+pub type WebSocketApiError = MyError; // TODO
 
 #[async_trait]
 impl Api for WebSocketApi {
@@ -154,7 +164,8 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             id,
             request,
         };
-        api.client.post(serde_json::to_string(&full_request)?.into()).await?;
+        api.client.post(serde_json::to_string(&full_request)?.into()).await
+            .map_err(|e| MyError::Connection(e.to_string()))?;
         Ok(Self {
             id,
             api,
@@ -162,10 +173,10 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
     }
     pub async fn wait(&self) -> Result<Response, WebSocketApiError> {
         loop {
-            match self.api.client.recv().await? {
+            match self.api.client.recv().await.map_err(|e| Connection(e.to_string()))? {
                 Message::Open => {},
                 Message::Close => {
-                    self.api.client.disconnect().await?; // Prevent attempts to re-connect...
+                    self.api.client.disconnect().await.map_err(|e| Connection(e.to_string()))?; // Prevent attempts to re-connect...
                     // ... because we lost state.
                     unsafe { &mut *self.api.responses.get().as_ptr() }.clear(); // TODO: Check `unsafe`s again.
                     return Err(WebSocketApiError::Disconnect);

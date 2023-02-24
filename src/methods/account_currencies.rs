@@ -1,10 +1,10 @@
 use std::convert::From;
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize};
 use crate::address::Address;
-use crate::connection::Api;
+use crate::connection::{Api, MyError};
 use crate::types::{Hash, Ledger};
 use crate::request::TypedRequest;
-use crate::response::{ParseResponseError, TypedResponse, WrongFieldsError};
+use crate::response::TypedResponse;
 
 #[derive(Debug, Serialize)]
 pub struct CurrenciesRequest {
@@ -25,12 +25,12 @@ pub struct CurrenciesResponse {
 pub async fn account_currencies<'a, A>(api: &'a A, data: &'a CurrenciesRequest)
     -> Result<TypedResponse<CurrenciesResponse>, A::Error>
     where A: Api,
-          A::Error: From<ParseResponseError> + From<WrongFieldsError>
+          A::Error: From<MyError>
 {
     let request = TypedRequest {
         command: "account_currencies",
         api_version: Some(1),
         data,
     };
-    Ok(api.call((&request).try_into().map_err(|_| WrongFieldsError::new())?).await?.try_into()?)
+    Ok(api.call((&request).try_into().map_err(de::Error::custom)?).await?.try_into()?)
 }

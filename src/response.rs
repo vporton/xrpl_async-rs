@@ -1,33 +1,13 @@
 extern crate serde;
-use reqwest::StatusCode;
-use derive_more::From;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use crate::connection::XrpError;
+use crate::connection::{MyError};
 
 lazy_static! {
     static ref LOAD_KEY: String = "load".to_string();
     static ref SUCCESS_KEY: String = "success".to_string();
     static ref ERROR_KEY: String = "error".to_string();
-}
-
-#[derive(Debug)]
-pub struct WrongFieldsError;
-
-impl WrongFieldsError {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-#[derive(Debug, From)]
-pub enum ParseResponseError {
-    Json(serde_json::Error),
-    WrongFields(WrongFieldsError),
-    Xrp(XrpError),
-    /// It may be 503 for rate limited or other HTTP status code.
-    HttpStatus(StatusCode),
 }
 
 /// For JSON RPC.
@@ -48,9 +28,9 @@ pub struct TypedResponse<T> {
 }
 
 impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
-    type Error = ParseResponseError;
+    type Error = MyError;
 
-    fn try_from(value: Response) -> Result<Self, ParseResponseError> {
+    fn try_from(value: Response) -> Result<Self, MyError> {
         Ok(Self {
             result: T::deserialize(value.result)?,
             load: value.load,
