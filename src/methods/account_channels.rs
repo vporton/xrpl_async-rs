@@ -5,7 +5,6 @@ use serde_json::Value;
 use crate::address::{AccountPublicKey, Address};
 use crate::connection::Api;
 use crate::types::{Hash, Ledger};
-use crate::json::ValueExt;
 use crate::paginate::{Paginator, PaginatorExtractor};
 use crate::request::TypedRequest;
 use crate::response::{ParseResponseError, TypedResponse, WrongFieldsError};
@@ -82,7 +81,7 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
 
 impl<'a> PaginatorExtractor<'a> for ChannelPaginator {
     fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError> {
-        Ok(result.get_valid("channels")?)
+        Ok(result.get("channels").ok_or(WrongFieldsError::new())?)
     }
 }
 

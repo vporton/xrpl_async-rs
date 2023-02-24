@@ -6,7 +6,6 @@ use serde::Deserialize;
 use serde_json::Value;
 use tokio_stream::Stream;
 use crate::connection::Api;
-use crate::json::ValueExt;
 use crate::request::Request;
 use crate::response::{ParseResponseError, Response, TypedResponse, WrongFieldsError};
 
@@ -17,7 +16,7 @@ lazy_static! {
 pub trait PaginatorExtractor<'de>: Deserialize<'de> + Unpin {
     fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError>;
     fn list(result: &Value) -> Result<&Vec<Value>, WrongFieldsError> {
-        Ok(Self::list_obj(result)?.as_array_valid()?)
+        Ok(Self::list_obj(result)?.as_array().ok_or(WrongFieldsError::new())?)
     }
 }
 
