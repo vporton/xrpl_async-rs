@@ -9,15 +9,15 @@ use reqwest::{Client, StatusCode};
 use serde::de;
 use workflow_websocket::client::{Message, WebSocket};
 use derive_more::From;
-use crate::connection::MyError::Connection;
+use crate::connection::XrplError::Connection;
 use crate::request::{Request, StreamedRequest};
 use crate::response::{Response, StreamedResponse};
 
 /// Status not `"success"`
 #[derive(Debug)]
-pub struct XrpError;
+pub struct XrplStatusError;
 
-impl XrpError {
+impl XrplStatusError {
     pub fn new() -> Self {
         Self {}
     }
@@ -26,7 +26,7 @@ impl XrpError {
 /// `E` is error
 #[async_trait]
 pub trait Api {
-    type Error: From<MyError>;
+    type Error: From<XrplError>;
     #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, Self::Error>;
     // async fn call_typed<'a, T: Into<Request<'a>>, U: TryFrom<Response>>(&self, request: T) -> Result<U, Self::Error> {
@@ -49,45 +49,43 @@ impl JsonRpcApi {
 }
 
 // TODO: Rename.
-// TODO: Analyze diligently
+// FIXME: Use it.
 #[derive(Debug, From)]
-pub enum MyError {
+pub enum XrplError {
     Message(String),
     #[from(ignore)]
     Connection(String),
     Json,
     HttpStatus(StatusCode),
     Disconnect, // WebSocket disconnect
-    Xrp(XrpError),
+    XrpStatus(XrplStatusError),
 }
 
-pub type JsonRpcApiError = MyError; // TODO
-
-impl de::Error for MyError {
+impl de::Error for XrplError {
     fn custom<T: Display>(msg: T) -> Self {
-        MyError::Message(msg.to_string())
+        XrplError::Message(msg.to_string())
     }
 }
 
-impl std::error::Error for MyError {}
+impl std::error::Error for XrplError {}
 
-impl Display for MyError {
+impl Display for XrplError {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            MyError::Message(msg) => formatter.write_str(msg),
+            XrplError::Message(msg) => formatter.write_str(msg),
             other => formatter.write_str(&format!("{:?}", other)), // TODO
             /* and so forth */
         }
     }
 }
 
-impl From<serde_json::Error> for JsonRpcApiError {
+impl From<serde_json::Error> for XrplError {
     fn from(_value: serde_json::Error) -> Self {
         Self::Json
     }
 }
 
-impl From<reqwest::Error> for JsonRpcApiError {
+impl From<reqwest::Error> for XrplError {
     fn from(value: reqwest::Error) -> Self {
         Self::Connection(value.to_string())
     }
@@ -95,14 +93,14 @@ impl From<reqwest::Error> for JsonRpcApiError {
 
 #[async_trait]
 impl Api for JsonRpcApi {
-    type Error = JsonRpcApiError;
+    type Error = XrplError;
     #[allow(clippy::needless_lifetimes)]
-    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
+    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, XrplError> {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
             .body(serde_json::to_string(&request)?)
             .send().await?;
         if !result.status().is_success() {
-            return Err(JsonRpcApiError::HttpStatus(result.status()));
+            return Err(XrplError::HttpStatus(result.status()));
         }
         Ok(Response::from_json(&result.json::<Value>().await?)?)
     }
@@ -124,11 +122,11 @@ impl WebSocketApi {
         }
     }
     pub async fn reconnect(&self) -> Result<(), WebSocketApiError> {
-        Ok(self.client.reconnect().await.map_err(|e| MyError::Connection(e.to_string()))?)
+        Ok(self.client.reconnect().await.map_err(|e| XrplError::Connection(e.to_string()))?)
     }
 }
 
-pub type WebSocketApiError = MyError; // TODO
+pub type WebSocketApiError = XrplError; // TODO
 
 #[async_trait]
 impl Api for WebSocketApi {
@@ -161,7 +159,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             request,
         };
         api.client.post(serde_json::to_string(&full_request)?.into()).await
-            .map_err(|e| MyError::Connection(e.to_string()))?;
+            .map_err(|e| XrplError::Connection(e.to_string()))?;
         Ok(Self {
             id,
             api,

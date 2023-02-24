@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use serde::{de, Deserialize};
 use serde_json::Value;
 use tokio_stream::Stream;
-use crate::connection::{Api, MyError};
+use crate::connection::{Api, XrplError};
 use crate::request::Request;
 use crate::response::{Response, TypedResponse};
 
@@ -14,13 +14,13 @@ lazy_static! {
 }
 
 pub trait PaginatorExtractor<'de>: Deserialize<'de> + Unpin {
-    fn list_obj(result: &Value) -> Result<&Value, MyError>;
-    fn list(result: &Value) -> Result<&Vec<Value>, MyError> {
-        Ok(Self::list_obj(result)?.as_array().ok_or::<MyError>(de::Error::custom("expected array"))?)
+    fn list_obj(result: &Value) -> Result<&Value, XrplError>;
+    fn list(result: &Value) -> Result<&Vec<Value>, XrplError> {
+        Ok(Self::list_obj(result)?.as_array().ok_or::<XrplError>(de::Error::custom("expected array"))?)
     }
 }
 
-pub struct Paginator<'a, A: Api, T: PaginatorExtractor<'a>> where A::Error: From<MyError> {
+pub struct Paginator<'a, A: Api, T: PaginatorExtractor<'a>> where A::Error: From<XrplError> {
     api: &'a A,
     request: Request<'a>,
     list: VecDeque<T>, // more efficient than `Vec`
@@ -28,7 +28,7 @@ pub struct Paginator<'a, A: Api, T: PaginatorExtractor<'a>> where A::Error: From
 }
 
 impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
-    where A::Error: From<MyError>
+    where A::Error: From<XrplError>
 {
     fn new(api: &'a A, request: Request<'a>, first_page_list: VecDeque<T>) -> Self {
         Self {
@@ -46,7 +46,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
             .map_err(de::Error::custom)?
             .into_iter()
             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
-            .collect::<Result<Vec<T>, MyError>>().map_err::<MyError, _>(de::Error::custom)?
+            .collect::<Result<Vec<T>, XrplError>>().map_err::<XrplError, _>(de::Error::custom)?
             .into();
         Ok((response, Self::new(api, request, list)))
     }
@@ -58,14 +58,14 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
             .map_err(de::Error::custom)?
             .into_iter()
             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
-            .collect::<Result<Vec<T>, MyError>>().map_err::<MyError, _>(de::Error::custom)?
+            .collect::<Result<Vec<T>, XrplError>>().map_err::<XrplError, _>(de::Error::custom)?
             .into();
         Ok((response, list))
     }
 }
 
 impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
-    where A::Error: From<MyError>
+    where A::Error: From<XrplError>
 {
     type Item = Result<TypedResponse<T>, A::Error>;
     fn poll_next(
@@ -95,7 +95,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                             .map_err(de::Error::custom)?
                             .into_iter()
                             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
-                            .collect::<Result<Vec<T>, MyError>>()?
+                            .collect::<Result<Vec<T>, XrplError>>()?
                             .into();
                         this.marker = response.result.get(&*MARKER_KEY).map(|v| v.clone());
                         if let Some(front) = this.list.pop_front() {

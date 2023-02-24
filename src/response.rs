@@ -2,7 +2,7 @@ extern crate serde;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_json::Value;
-use crate::connection::{MyError, XrpError};
+use crate::connection::{XrplError, XrplStatusError};
 
 lazy_static! {
     static ref LOAD_KEY: String = "load".to_string();
@@ -28,9 +28,9 @@ pub struct TypedResponse<T> {
 }
 
 impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
-    type Error = MyError;
+    type Error = XrplError;
 
-    fn try_from(value: Response) -> Result<Self, MyError> {
+    fn try_from(value: Response) -> Result<Self, XrplError> {
         Ok(Self {
             result: T::deserialize(value.result)?,
             load: value.load,
@@ -40,10 +40,10 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
 }
 
 impl Response {
-    pub fn from_str(s: &str) -> Result<Self, MyError> {
+    pub fn from_str(s: &str) -> Result<Self, XrplError> {
         Self::from_json(&serde_json::from_str::<Value>(s)?)
     }
-    pub fn from_json(s: &Value) -> Result<Self, MyError> {
+    pub fn from_json(s: &Value) -> Result<Self, XrplError> {
         #[derive(Deserialize)]
         struct Response2 {
             pub result: Value,
@@ -53,7 +53,7 @@ impl Response {
         }
         let data: Response2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
-            return Err(XrpError::new().into());
+            return Err(XrplStatusError::new().into());
         }
         // TODO: Implement without `clone`.
         Ok(Self {
@@ -76,10 +76,10 @@ pub struct StreamedResponse {
 // impl<'de> Deserialize<'de> for Response {
 
 impl StreamedResponse {
-    pub fn from_str(s: &str) -> Result<Self, MyError> {
+    pub fn from_str(s: &str) -> Result<Self, XrplError> {
         Self::from_json(&serde_json::from_str::<Value>(s)?)
     }
-    pub fn from_json(s: &Value) -> Result<Self, MyError> {
+    pub fn from_json(s: &Value) -> Result<Self, XrplError> {
         #[derive(Deserialize)]
         struct StreamedResponse2 {
             pub result: Value,
@@ -92,7 +92,7 @@ impl StreamedResponse {
         }
         let data: StreamedResponse2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.status != "success" {
-            return Err(XrpError::new().into());
+            return Err(XrplStatusError::new().into());
         }
         Ok(StreamedResponse {
             result: Response {

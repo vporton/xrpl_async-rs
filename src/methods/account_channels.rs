@@ -3,7 +3,7 @@ use std::convert::{From, Into};
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use crate::address::{AccountPublicKey, Address};
-use crate::connection::{Api, MyError};
+use crate::connection::{Api, XrplError};
 use crate::types::{Hash, Ledger};
 use crate::paginate::{Paginator, PaginatorExtractor};
 use crate::request::TypedRequest;
@@ -80,8 +80,8 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
 }
 
 impl<'a> PaginatorExtractor<'a> for ChannelPaginator {
-    fn list_obj(result: &Value) -> Result<&Value, MyError> {
-        Ok(result.get("channels").ok_or::<MyError>(de::Error::missing_field("channels"))?)
+    fn list_obj(result: &Value) -> Result<&Value, XrplError> {
+        Ok(result.get("channels").ok_or::<XrplError>(de::Error::missing_field("channels"))?)
     }
 }
 
@@ -90,7 +90,7 @@ pub async fn account_channels<'a, A>(
     data: &'a ChannelsRequest,
 ) -> Result<(TypedResponse<ChannelResponse>, Paginator<'a, A, ChannelPaginator>), A::Error>
     where A: Api,
-          A::Error: From<MyError>
+          A::Error: From<XrplError>
 {
     let request = TypedRequest {
         command: "account_channels",

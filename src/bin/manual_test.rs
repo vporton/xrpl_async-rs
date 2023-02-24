@@ -4,11 +4,11 @@ use tokio_stream::StreamExt;
 use workflow_websocket::client::{Options, WebSocket};
 use xrpl_async::methods::account_channels::{account_channels, ChannelsRequest};
 use xrpl_async::address::Address;
-use xrpl_async::connection::{Api, JsonRpcApi, MyError, WebSocketApi};
+use xrpl_async::connection::{Api, JsonRpcApi, XrplError, WebSocketApi};
 use xrpl_async::types::Ledger;
 
 async fn basic_test<A: Api>(api: &A)
-    where A::Error: From<MyError> + Debug
+    where A::Error: From<XrplError> + Debug
 {
     let request = ChannelsRequest {
         account: Address::decode("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn").unwrap(),

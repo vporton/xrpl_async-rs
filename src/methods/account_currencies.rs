@@ -1,7 +1,7 @@
 use std::convert::From;
 use serde::{de, Deserialize, Serialize};
 use crate::address::Address;
-use crate::connection::{Api, MyError};
+use crate::connection::{Api, XrplError};
 use crate::types::{Hash, Ledger};
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
@@ -25,7 +25,7 @@ pub struct CurrenciesResponse {
 pub async fn account_currencies<'a, A>(api: &'a A, data: &'a CurrenciesRequest)
     -> Result<TypedResponse<CurrenciesResponse>, A::Error>
     where A: Api,
-          A::Error: From<MyError>
+          A::Error: From<XrplError>
 {
     let request = TypedRequest {
         command: "account_currencies",
