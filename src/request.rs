@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
-use serde_json::{json, Map, Number, Value};
+use serde::{Serialize, Serializer};
+use serde_json::{json, Number, Value};
 
 lazy_static! {
     static ref API_VERSION_KEY: String = "api_version".to_string();
@@ -11,7 +12,7 @@ lazy_static! {
 pub struct Request<'a> {
     pub command: &'a str,
     pub api_version: Option<u32>,
-    pub params: Map<String, Value>,
+    pub params: Value,
 }
 
 /// For JSON RPC.
@@ -22,41 +23,23 @@ pub struct TypedRequest<'a, T> {
     pub data: T,
 }
 
-impl<'a, T: FormatParams> From<&TypedRequest<'a, T>> for Request<'a>
+impl<'a, T: Serialize> TryFrom<&TypedRequest<'a, T>> for Request<'a>
 {
-    fn from(value: &TypedRequest<'a, T>) -> Self {
-        Self {
+    type Error = serde_json::Error;
+
+    fn try_from(value: &TypedRequest<'a, T>) -> Result<Self, Self::Error> {
+        Ok(Self {
             command: value.command,
             api_version: value.api_version,
-            params: value.data.to_json(),
-        }
+            params: value.data.serialize(serde_json::value::Serializer)?,
+        })
     }
 }
 
-impl<'a, T: FormatParams> FormatRequest for TypedRequest<'a, T> {
-    fn to_json(&self) -> Value {
-        Request::from(self).to_json()
+impl<'a, T: Serialize> Serialize for TypedRequest<'a, T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        Request::try_from(self).map_err(|_| serde::ser::Error::custom("Internal error: cannot serialize"))?.serialize(serializer)
     }
-}
-
-impl<'a> From<Request<'a>> for Value  {
-    fn from(value: Request<'a>) -> Self {
-        value.to_json()
-    }
-}
-
-pub trait FormatRequest {
-    fn to_json(&self) -> Value;
-    fn to_string(&self) -> serde_json::Result<String> {
-        serde_json::to_string(&self.to_json())
-    }
-    fn to_string_pretty(&self) -> serde_json::Result<String> {
-        serde_json::to_string_pretty(&self.to_json())
-    }
-}
-
-pub trait FormatParams {
-    fn to_json(&self) -> Map<String, Value>;
 }
 
 /// For WebSocket.
@@ -67,8 +50,8 @@ pub struct StreamedRequest<'a> {
     pub id: u64,
 }
 
-impl<'a> FormatRequest for Request<'a> {
-    fn to_json(&self) -> Value {
+impl<'a> Serialize for Request<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let mut params = serde_json::Map::<String, Value>::new();
         if let Some(api_version) = self.api_version {
             params.insert(API_VERSION_KEY.clone(), api_version.into()); // TODO: Don't clone.
@@ -76,12 +59,12 @@ impl<'a> FormatRequest for Request<'a> {
         json!({
             "method": self.command,
             "params": [self.params], // yes, the docs say use one-item array
-        })
+        }).serialize(serializer)
     }
 }
 
-impl<'a> FormatRequest for StreamedRequest<'a> {
-    fn to_json(&self) -> Value {
+impl<'a> Serialize for StreamedRequest<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let mut params = serde_json::Map::<String, Value>::new();
         // TODO: Don't clone
         params.insert(ID_KEY.clone(), Value::Number(Number::from(self.id)));
@@ -89,9 +72,11 @@ impl<'a> FormatRequest for StreamedRequest<'a> {
         if let Some(api_version) = self.request.api_version {
             params.insert(API_VERSION_KEY.clone(), api_version.into());
         }
-        for (key, value) in &self.request.params {
-            params.insert(key.clone(), value.to_owned());
+        if let Some(params2) = self.request.params.as_object() { // hack
+            for (key, value) in params2 {
+                params.insert(key.clone(), value.to_owned());
+            }
         }
-        json!(params)
+        json!(params).serialize(serializer)
     }
 }

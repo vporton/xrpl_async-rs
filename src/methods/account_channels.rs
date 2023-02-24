@@ -1,53 +1,29 @@
+// extern crate serde;
 use std::convert::{From, Into};
-use serde_json::{Map, Value};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use crate::address::{AccountPublicKey, Address};
 use crate::connection::Api;
 use crate::types::{Hash, Ledger};
 use crate::json::ValueExt;
 use crate::paginate::{Paginator, PaginatorExtractor};
-use crate::request::{FormatParams, TypedRequest};
-use crate::response::{ParseResponse, ParseResponseError, TypedResponse, WrongFieldsError};
+use crate::request::TypedRequest;
+use crate::response::{ParseResponseError, TypedResponse, WrongFieldsError};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct ChannelsRequest {
     pub account: Address,
     pub destination_account: Option<Address>,
+    #[serde(flatten)]
     pub ledger: Ledger,
     pub limit: Option<u16>,
 }
 
-impl FormatParams for &ChannelsRequest {
-    fn to_json(&self) -> Map<String, Value> {
-        let mut j = Map::new();
-        // TODO: Move to `lazy_static`.
-        j.insert("account".to_owned(), Value::String(self.account.encode()));
-        if let Some(address) = &self.destination_account {
-            j.insert("destination_account".to_owned(), address.encode().into());
-        }
-        if let Some(limit) = self.limit {
-            j.insert("limit".to_owned(), limit.into());
-        }
-        let (ledger_key, ledger_value) = self.ledger.to_json();
-        j.insert(ledger_key.to_owned(), ledger_value);
-        j
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct ChannelResponse {
     pub ledger_hash: Option<Hash>,
     pub ledger_index: Option<u32>,
     pub validated: Option<bool>,
-}
-
-impl ParseResponse for ChannelResponse {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        Ok(ChannelResponse {
-            ledger_hash: value.get("ledger_hash").map(|v| Ok::<_, WrongFieldsError>(v.as_hash_valid()?)).transpose()?,
-            ledger_index: value.get("ledger_index").map(|v| Ok::<_, WrongFieldsError>(v.as_u32_valid()?)).transpose()?,
-            validated: value.get("validated").map(|v| Ok::<_, WrongFieldsError>(v.as_bool_valid()?)).transpose()?,
-        })
-    }
 }
 
 #[derive(Debug)]
@@ -66,27 +42,45 @@ pub struct ChannelPaginator {
     pub destination_tag: Option<u32>,
 }
 
-impl ParseResponse for ChannelPaginator {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        Ok(Self {
-            account: value.get_valid("account")?.as_address_valid()?,
-            amount: value.get_valid("amount")?.as_xrp_valid()?,
-            balance: value.get_valid("balance")?.as_xrp_valid()?,
-            channel_id: value.get_valid("channel_id")?.as_hash_valid()?,
-            destination_account: value.get_valid("destination_account")?.as_address_valid()?,
-            settle_delay: value.get_valid("settle_delay")?.as_u64_valid()?,
-            public_key: value.get("public_key").map(|s| -> Result<_, WrongFieldsError> { AccountPublicKey::decode(s.as_str_valid()?).map_err(|_| WrongFieldsError::new()) })
-                .or(value.get("public_key_hex").map(|s| AccountPublicKey::decode_hex(s.as_str_valid()?).map_err(|_| WrongFieldsError::new())))
-                .transpose()?,
-            expiration: value.get("expiration").map(|s| s.as_u64_valid()).transpose()?,
-            cancel_after: value.get("cancel_after").map(|s| s.as_u64_valid()).transpose()?,
-            source_tag: value.get("source_tag").map(|s| s.as_u32_valid()).transpose()?,
-            destination_tag: value.get("destination_tag").map(|s| s.as_u32_valid()).transpose()?,
+impl<'de> Deserialize<'de> for ChannelPaginator {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        #[derive(Debug, Deserialize)]
+        pub struct ChannelPaginator2 {
+            pub account: Address,
+            #[serde(with = "crate::types::xrp")]
+            pub amount: u64,
+            #[serde(with = "crate::types::xrp")]
+            pub balance: u64,
+            pub channel_id: Hash,
+            pub destination_account: Address,
+            pub settle_delay: u64,
+            #[serde(with = "crate::address::option_base58")]
+            pub public_key: Option<AccountPublicKey>,
+            #[serde(with = "crate::address::option_hex")]
+            pub public_key_hex: Option<AccountPublicKey>,
+            pub expiration: Option<u64>,
+            pub cancel_after: Option<u64>,
+            pub source_tag: Option<u32>,
+            pub destination_tag: Option<u32>,
+        }
+        let value: ChannelPaginator2 = ChannelPaginator2::deserialize(deserializer)?.into();
+        Ok(ChannelPaginator {
+            account: value.account,
+            amount: value.amount,
+            balance: value.balance,
+            channel_id: value.channel_id,
+            destination_account: value.destination_account,
+            settle_delay: value.settle_delay,
+            public_key: value.public_key.or(value.public_key_hex),
+            expiration: value.expiration,
+            cancel_after: value.cancel_after,
+            source_tag: value.source_tag,
+            destination_tag: value.destination_tag,
         })
     }
 }
 
-impl PaginatorExtractor for ChannelPaginator {
+impl<'a> PaginatorExtractor<'a> for ChannelPaginator {
     fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError> {
         Ok(result.get_valid("channels")?)
     }
@@ -104,6 +98,7 @@ pub async fn account_channels<'a, A>(
         api_version: Some(1),
         data,
     };
-    let (response, paginator) = Paginator::start(api, (&request).into()).await?;
+    let (response, paginator) =
+        Paginator::start(api, (&request).try_into().map_err(|_| WrongFieldsError::new())?).await?; // TODO: wrong error
     Ok((response.try_into()?, paginator))
 }

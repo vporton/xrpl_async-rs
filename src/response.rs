@@ -1,6 +1,8 @@
+extern crate serde;
 use reqwest::StatusCode;
 use derive_more::From;
 use lazy_static::lazy_static;
+use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use crate::connection::XrpError;
 
@@ -45,72 +47,71 @@ pub struct TypedResponse<T> {
     pub forwarded: bool,
 }
 
-impl<T: ParseResponse> TryFrom<Response> for TypedResponse<T> {
+impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
     type Error = ParseResponseError;
 
     fn try_from(value: Response) -> Result<Self, ParseResponseError> {
         Ok(Self {
-            result: T::from_json(&value.result)?,
+            result: T::deserialize(value.result)?,
             load: value.load,
             forwarded: value.forwarded,
         })
     }
 }
 
-pub trait ParseResponse: Sized {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError>;
-    fn from_string(s: &str) -> Result<Self, ParseResponseError> {
-        Ok(Self::from_json(&serde_json::from_str::<Value>(s)?)?)
-    }
-    fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
-        let status = result.get("status");
-        if status == Some(&Value::String(ERROR_KEY.clone())) {
-            let error_code = result
-                .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
-                .as_str().ok_or::<ParseResponseError>(WrongFieldsError::new().into())?;
-            Err(XrpError::new(error_code.to_owned()).into())
-        } else if status == Some(&Value::String(SUCCESS_KEY.clone())) {
-            Ok(())
-        } else {
-            Err(WrongFieldsError::new().into())
-        }
-    }
-}
-
 /// For WebSocket.
 #[derive(Debug)]
 pub struct StreamedResponse {
-    pub response: Response,
+    pub result: Response,
     pub id: u64,
     // TODO: `type`
 }
 
-impl<'a> ParseResponse for Response {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        let result = value.get("result").ok_or(WrongFieldsError::new())?;
+impl<'de> Deserialize<'de> for Response {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        #[derive(Deserialize)]
+        struct Response2 {
+            pub result: Value,
+            // TODO: `warnings`
+            pub warning: Option<String>,
+            pub forwarded: Option<bool>,
+        }
+        let data: Response2 = Response2::deserialize(deserializer)?.into();
+        if data.result.get("status") != Some(&Value::String("success".to_owned())) {
+            return Err(serde::de::Error::custom("XPRL not success")).into();
+        }
         // TODO: Implement without `clone`.
-        Self::parse_error(&result)?;
-        Ok(Response {
-            result: result.clone(),
-            load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
-            forwarded: value.get("forwarded") == Some(&Value::Bool(true)),
+        Ok(Self {
+            result: data.result,
+            load: data.warning == Some(LOAD_KEY.clone()),
+            forwarded: data.forwarded == Some(true),
         })
     }
 }
 
-impl<'a> ParseResponse for StreamedResponse {
-    fn from_json(value: &Value) -> Result<Self, ParseResponseError> {
-        // TODO: Implement without `clone`.
-        let result = value.get("result").ok_or(WrongFieldsError::new())?.clone();
-        Self::parse_error(value)?;
-        let response = Response {
-            result,
-            load: value.get("warning") == Some(&Value::String(LOAD_KEY.clone())),
-            forwarded: value.get("forwarded") == Some(&Value::Bool(true)),
-        };
+impl<'de> Deserialize<'de> for StreamedResponse {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        #[derive(Deserialize)]
+        struct StreamedResponse2 {
+            pub result: Value,
+            pub id: u64,
+            // TODO: `type`
+            // TODO: `warnings`
+            pub status: String,
+            pub forwarded: Option<bool>,
+            pub warning: Option<String>,
+        }
+        let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into();
+        if data.status != "success" {
+            return Err(serde::de::Error::custom("XPRL not success")).into();
+        }
         Ok(StreamedResponse {
-            id: value.get("id").ok_or(WrongFieldsError::new())?.as_u64().ok_or(WrongFieldsError::new())?,
-            response,
+            result: Response {
+                result: data.result,
+                load: data.warning == Some(LOAD_KEY.clone()), // TODO: Implement without `clone`.
+                forwarded: data.forwarded == Some(true),
+            },
+            id: data.id,
         })
     }
 }

@@ -5,10 +5,11 @@ use derive_more::From;
 use serde_json::Value;
 use async_trait::async_trait;
 use reqwest::Client;
+use serde::Deserialize;
 use workflow_websocket::client::{Message, WebSocket};
 use crate::response::ParseResponseError::HttpStatus;
-use crate::request::{FormatRequest, Request, StreamedRequest};
-use crate::response::{ParseResponse, ParseResponseError, Response, StreamedResponse, WrongFieldsError};
+use crate::request::{Request, StreamedRequest};
+use crate::response::{ParseResponseError, Response, StreamedResponse, WrongFieldsError};
 
 #[derive(Debug)]
 pub struct XrpError {
@@ -75,12 +76,12 @@ impl Api for JsonRpcApi {
     #[allow(clippy::needless_lifetimes)]
     async fn call<'a>(&self, request: Request<'a>) -> Result<Response, JsonRpcApiError> {
         let result = self.client.get(&self.url).header("Content-Type", "application/json")
-            .body(request.to_string()?)
+            .body(serde_json::to_string(&request)?)
             .send().await?;
         if !result.status().is_success() {
             return Err(HttpStatus(result.status()).into());
         }
-        Ok(Response::from_json(&result.json::<Value>().await?)?)
+        Ok(Response::deserialize(&result.json::<Value>().await?)?)
     }
 }
 
@@ -153,7 +154,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             id,
             request,
         };
-        api.client.post(full_request.to_string()?.into()).await?;
+        api.client.post(serde_json::to_string(&full_request)?.into()).await?;
         Ok(Self {
             id,
             api,
@@ -170,9 +171,9 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                     return Err(WebSocketApiError::Disconnect);
                 },
                 Message::Text(msg) => {
-                    let response = StreamedResponse::from_string(&msg)?;
+                    let response: StreamedResponse = serde_json::from_str(&msg)?;
                     // TODO: Check `unsafe`s again.
-                    unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.response);
+                    unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.result);
                     if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
                         return Ok(response);
                     }
@@ -222,13 +223,13 @@ mod tests {
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: serde_json::Map::new(),
+                params: serde_json::Map::new().into(),
             });
         let _waiter2 =
             WebSocketMessageWaiter::create(&api, Request {
                 command: "test",
                 api_version: None,
-                params: serde_json::Map::new(),
+                params: serde_json::Map::new().into(),
             });
     }
 }

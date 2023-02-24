@@ -24,7 +24,7 @@ impl FormatParams for &CurrenciesRequest {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct CurrenciesResponse {
     pub ledger_hash: Option<Hash>,
     pub ledger_index: Option<u32>,

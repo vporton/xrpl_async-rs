@@ -3,9 +3,12 @@ use std::iter::{once, repeat};
 use std::num::ParseIntError;
 use hex::{decode, FromHexError};
 use derive_more::From;
-use serde_json::{json, Value};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::Visitor;
+use serde::ser::SerializeMap;
+use serde_json::json;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Hash([u8; 32]);
 
 impl ToString for Hash {
@@ -26,12 +29,65 @@ impl Hash {
     }
 }
 
+impl Serialize for Hash {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+struct HashVisitor;
+
+impl<'de> Visitor<'de> for HashVisitor {
+    type Value = Hash;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a hex hash")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where E: de::Error,
+    {
+        Hash::from_hex(&value).map_err(|_| de::Error::custom("invalid hash"))
+    }
+}
+
+impl<'de> Deserialize<'de> for Hash {
+    fn deserialize<D>(deserializer: D) -> Result<Hash, D::Error>
+        where D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(HashVisitor)
+    }
+}
+
 pub fn encode_xrp_amount(amount: u64) -> String {
     amount.to_string()
 }
 
 pub fn decode_xrp_amount(s: &str) -> Result<u64, ParseIntError> {
     s.parse::<u64>()
+}
+
+pub mod xrp {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use super::*;
+
+    pub fn serialize<S>(x: &u64, s: S) -> Result<S::Ok, S::Error>
+        where S: Serializer,
+    {
+        s.serialize_str(&super::encode_xrp_amount(*x))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
+        where D: Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        String::deserialize(deserializer)
+            .and_then(|string| decode_xrp_amount(&string).map_err(|err| Error::custom(err.to_string())))
+    }
 }
 
 const XPR_DIGITS_AFTER_DOT: usize = 6;
@@ -81,14 +137,16 @@ pub enum Ledger {
     Current,
 }
 
-impl Ledger {
-    pub fn to_json(&self) -> (&str, Value) {
+impl Serialize for Ledger {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let mut map = serializer.serialize_map(Some(1))?;
         match self {
-            Ledger::Index(ind) => ("ledger_index", json!(ind)),
-            Ledger::Hash(hash) => ("ledger_hash", Value::String(hash.to_string())),
-            Ledger::Validated => ("ledger_index", Value::String("validated".to_owned())),
-            Ledger::Closed => ("ledger_index", Value::String("closed".to_owned())),
-            Ledger::Current => ("ledger_index", Value::String("current".to_owned())),
+            Ledger::Index(ind) => map.serialize_entry("ledger_index", &json!(ind))?,
+            Ledger::Hash(hash) => map.serialize_entry("ledger_hash", &json!(hash))?,
+            Ledger::Validated => map.serialize_entry("ledger_index", &json!("validated"))?,
+            Ledger::Closed => map.serialize_entry("ledger_index", &json!("closed"))?,
+            Ledger::Current => map.serialize_entry("ledger_index", &json!("current"))?,
         }
+        map.end()
     }
 }
