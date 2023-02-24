@@ -15,5 +15,7 @@ pub struct AccountRoot {
     pub burned_nft_tokens: Option<u32>,
     #[serde(rename = "Domain")]
     pub domain: Option<String>,
+    #[serde(rename = "EmailHash")]
+    pub email_hash: Option<Hash<16>>,
     // FIXME: more fields
 }
