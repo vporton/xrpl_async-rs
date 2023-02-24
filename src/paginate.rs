@@ -118,7 +118,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                 let mut request = this.request.clone();
                 if let Value::Object(obj) = request.params {
                     let mut m = obj.clone();
-                    m.insert(MARKER_KEY.clone(), marker); // FIXME: works or modifies a copy?
+                    m.insert(MARKER_KEY.clone(), marker);
                     request.params = Value::Object(m);
                 }
                 loader(&request)
