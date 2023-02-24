@@ -89,7 +89,12 @@ pub type SeedValue = Encoding<16, 0x21, 's'>;
 /// Validation public key or node public key
 pub type ValidationOrNodePublicKey = Encoding<33, 0x1C, 'n'>;
 
-impl Serialize for Address {
+impl<
+    'de,
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char,
+> Serialize for Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -98,10 +103,20 @@ impl Serialize for Address {
     }
 }
 
-struct AddressVisitor;
+// TODO: Rename.
+struct AddressVisitor<
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char,
+>;
 
-impl<'de> Visitor<'de> for AddressVisitor {
-    type Value = Address;
+impl<
+    'de,
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char,
+> Visitor<'de> for AddressVisitor<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
+    type Value = Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>;
 
     fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
         formatter.write_str("an address")
@@ -111,12 +126,17 @@ impl<'de> Visitor<'de> for AddressVisitor {
         where
             E: de::Error,
     {
-        Address::decode(&value).map_err(de::Error::custom)
+        Self::Value::decode(&value).map_err(de::Error::custom)
     }
 }
 
-impl<'de> Deserialize<'de> for Address {
-    fn deserialize<D>(deserializer: D) -> Result<Address, D::Error>
+impl<
+    'de,
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char,
+> Deserialize<'de> for Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: Deserializer<'de>,
     {
