@@ -58,22 +58,23 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
     }
 }
 
-pub trait ParseResponse: Sized {
-    // FIXME: Use it:
-    fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
-        let status = result.get("status");
-        if status == Some(&Value::String(ERROR_KEY.clone())) {
-            let error_code = result
-                .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
-                .as_str().ok_or::<ParseResponseError>(WrongFieldsError::new().into())?;
-            Err(XrpError::new(error_code.to_owned()).into())
-        } else if status == Some(&Value::String(SUCCESS_KEY.clone())) {
-            Ok(())
-        } else {
-            Err(WrongFieldsError::new().into())
-        }
-    }
-}
+// TODO: Remove.
+// pub trait ParseResponse: Sized {
+//     // FIXME: Use it:
+//     fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
+//         let status = result.get("status");
+//         if status == Some(&Value::String(ERROR_KEY.clone())) {
+//             let error_code = result
+//                 .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
+//                 .as_str().ok_or::<ParseResponseError>(WrongFieldsError::new().into())?;
+//             Err(XrpError::new(error_code.to_owned()).into())
+//         } else if status == Some(&Value::String(SUCCESS_KEY.clone())) {
+//             Ok(())
+//         } else {
+//             Err(WrongFieldsError::new().into())
+//         }
+//     }
+// }
 
 /// For WebSocket.
 #[derive(Debug)]
@@ -93,7 +94,9 @@ impl<'de> Deserialize<'de> for Response {
             pub forwarded: Option<bool>,
         }
         let data: Response2 = Response2::deserialize(deserializer)?.into();
-        // ParseResponse::parse_error(&data.result).unwrap(); // FIXME: Check everything in this line!!!
+        if data.result.get("status") != Some(&Value::String("success".to_owned())) {
+            return Err(serde::de::Error::custom("XPRL not success")).into();
+        }
         // TODO: Implement without `clone`.
         Ok(Self {
             result: data.result,
@@ -111,13 +114,16 @@ impl<'de> Deserialize<'de> for StreamedResponse {
             pub id: u64,
             // TODO: `type`
             // TODO: `warnings`
+            pub status: String,
             pub forwarded: Option<bool>,
             pub warning: Option<String>, // FIXME: Why is it missing in `Response2`?
         }
         let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into();
         // TODO: Implement without `clone`.
         let result: Value = data.response.result;
-        // ParseResponse::parse_error(&result).unwrap(); // FIXME: everything in this line seems wrong!!
+        if data.status != "success" {
+            return Err(serde::de::Error::custom("XPRL not success")).into();
+        }
         Ok(StreamedResponse {
             response: Response {
                 result,

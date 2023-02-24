@@ -66,6 +66,7 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
             pub account: Address,
             #[serde(with = "crate::types::xrp")]
             pub amount: u64,
+            #[serde(with = "crate::types::xrp")]
             pub balance: u64,
             pub channel_id: Hash,
             pub destination_account: Address,
