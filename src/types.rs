@@ -126,7 +126,7 @@ pub fn xrp_to_human_representation(amount: u64) -> String {
 
 // TODO: Unit tests.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Ledger {
     Index(u32),
     Hash(Hash),
