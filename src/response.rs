@@ -120,14 +120,13 @@ impl<'de> Deserialize<'de> for StreamedResponse {
             pub warning: Option<String>, // FIXME: Why is it missing in `Response2`?
         }
         let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into(); // FIXME: Triggers error at this line.
-        // TODO: Implement without `clone`.
         if data.status != "success" {
             return Err(serde::de::Error::custom("XPRL not success")).into();
         }
         Ok(StreamedResponse {
             result: Response {
                 result: data.result,
-                load: data.warning == Some(LOAD_KEY.clone()),
+                load: data.warning == Some(LOAD_KEY.clone()), // TODO: Implement without `clone`.
                 forwarded: data.forwarded == Some(true),
             },
             id: data.id,
