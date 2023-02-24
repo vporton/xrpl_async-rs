@@ -15,7 +15,6 @@ lazy_static! {
 }
 
 pub trait PaginatorExtractor<'de>: Deserialize<'de> + Unpin {
-    // FIXME: objects vs references
     fn list_obj(result: &Value) -> Result<&Value, WrongFieldsError>;
     fn list(result: &Value) -> Result<&Vec<Value>, WrongFieldsError> {
         Ok(Self::list_obj(result)?.as_array_valid()?)

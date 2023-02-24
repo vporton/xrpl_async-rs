@@ -59,24 +59,6 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
     }
 }
 
-// TODO: Remove.
-// pub trait ParseResponse: Sized {
-//     // FIXME: Use it:
-//     fn parse_error(result: &Value) -> Result<(), ParseResponseError> {
-//         let status = result.get("status");
-//         if status == Some(&Value::String(ERROR_KEY.clone())) {
-//             let error_code = result
-//                 .get("error").ok_or::<ParseResponseError>(WrongFieldsError::new().into())?
-//                 .as_str().ok_or::<ParseResponseError>(WrongFieldsError::new().into())?;
-//             Err(XrpError::new(error_code.to_owned()).into())
-//         } else if status == Some(&Value::String(SUCCESS_KEY.clone())) {
-//             Ok(())
-//         } else {
-//             Err(WrongFieldsError::new().into())
-//         }
-//     }
-// }
-
 /// For WebSocket.
 #[derive(Debug)]
 pub struct StreamedResponse {
@@ -117,9 +99,9 @@ impl<'de> Deserialize<'de> for StreamedResponse {
             // TODO: `warnings`
             pub status: String,
             pub forwarded: Option<bool>,
-            pub warning: Option<String>, // FIXME: Why is it missing in `Response2`?
+            pub warning: Option<String>,
         }
-        let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into(); // FIXME: Triggers error at this line.
+        let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into();
         if data.status != "success" {
             return Err(serde::de::Error::custom("XPRL not success")).into();
         }
