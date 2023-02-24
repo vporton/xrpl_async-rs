@@ -48,8 +48,6 @@ impl JsonRpcApi {
     }
 }
 
-// TODO: Rename.
-// FIXME: Use it.
 #[derive(Debug, From)]
 pub enum XrplError {
     Message(String),
