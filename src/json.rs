@@ -3,6 +3,7 @@ use crate::address::Address;
 use crate::response::WrongFieldsError;
 use crate::types::{decode_xrp_amount, Hash};
 
+// TODO: Most of these methods are not used.
 pub(crate) trait ValueExt {
     fn get_valid(&self, key: &str) -> Result<&Value, WrongFieldsError>;
     fn as_bool_valid(&self) -> Result<bool, WrongFieldsError>;
