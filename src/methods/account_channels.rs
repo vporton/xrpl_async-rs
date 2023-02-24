@@ -81,7 +81,7 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
 
 impl<'a> PaginatorExtractor<'a> for ChannelPaginator {
     fn list_obj(result: &Value) -> Result<&Value, MyError> {
-        Ok(result.get("channels").ok_or::<MyError>(de::Error::custom("No `channels` field."))?)
+        Ok(result.get("channels").ok_or::<MyError>(de::Error::missing_field("channels"))?)
     }
 }
 
