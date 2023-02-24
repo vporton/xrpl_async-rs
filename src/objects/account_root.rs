@@ -4,12 +4,12 @@ use crate::types::Hash;
 use crate::types::xrp::deserialize;
 
 #[derive(Debug)]
-pub struct Flags(u32);
+pub struct AccountRootFlags(u32);
 // TODO: Values of flags: https://xrpl.org/accountroot.html
 
-impl<'de> Deserialize<'de> for Flags {
+impl<'de> Deserialize<'de> for AccountRootFlags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        Ok(Flags(deserialize(deserializer)?.try_into().map_err(de::Error::custom)?))
+        Ok(AccountRootFlags(deserialize(deserializer)?.try_into().map_err(de::Error::custom)?))
     }
 }
 
@@ -29,7 +29,7 @@ pub struct AccountRoot {
     #[serde(rename = "EmailHash")]
     pub email_hash: Option<Hash<16>>,
     #[serde(rename = "Flags")]
-    pub flags: Flags,
+    pub flags: AccountRootFlags,
     #[serde(rename = "MessageKey")]
     pub message_key: Option<AccountPublicKey>,
     #[serde(rename = "MintedNFTokens")]
