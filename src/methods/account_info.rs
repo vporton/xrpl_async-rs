@@ -2,7 +2,7 @@ use std::convert::From;
 use serde::{de, Deserialize, Serialize, Serializer};
 use crate::address::Address;
 use crate::connection::{Api, XrplError};
-use crate::objects::account_root::AccountRoot;
+use crate::objects::signer_list::SignerList;
 use crate::types::Ledger;
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
@@ -39,7 +39,7 @@ impl Serialize for AccountInfoRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct AccountInfoResponse {
-    pub signer_lists,
+    pub signer_lists: Vec<SignerList>, // FIXME: The array is always one, element; transform.
     // FIXME: more fields
 }
 
