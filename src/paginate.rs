@@ -43,10 +43,11 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
     pub async fn start(api: &'a A, request: Request<'a>) -> Result<(Response, Paginator<'a, A, T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        let list = T::list(&response.result) // TODO: `clone`?
+        // TODO: Can do without `clone`?
+        let list = T::list(&response.result)
             .map_err(|_| WrongFieldsError::new())?
             .into_iter()
-            .map(|e| T::deserialize(e).map_err(|_| WrongFieldsError::new().into()))
+            .map(|e| T::deserialize(e.clone()).map_err(|_| WrongFieldsError::new().into()))
             .collect::<Result<Vec<T>, ParseResponseError>>()?
             .into();
         Ok((response, Self::new(api, request, list)))
@@ -54,10 +55,11 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
     pub async fn first_page(api: &'a A, request: Request<'a>) -> Result<(Response, Vec<T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        let list: Vec<T> = T::list(&response.result) // TODO: `clone`?
+        // TODO: Can do without `clone`?
+        let list: Vec<T> = T::list(&response.result)
             .map_err(|_| WrongFieldsError::new())?
             .into_iter()
-            .map(|e| T::deserialize(e).map_err(|_| WrongFieldsError::new().into()))
+            .map(|e| T::deserialize(e.clone()).map_err(|_| WrongFieldsError::new().into()))
             .collect::<Result<Vec<T>, ParseResponseError>>()?
             .into();
         Ok((response, list))
@@ -90,10 +92,11 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                         load = response.load;
                         forwarded = response.forwarded;
                         // TODO: Duplicate code:
-                        this.list = T::list(&response.result) // TODO: `clone`?
+                        // TODO: Can do without `clone`?
+                        this.list = T::list(&response.result)
                             .map_err(|_| WrongFieldsError::new())?
                             .into_iter()
-                            .map(|e| T::deserialize(e).map_err(|_| WrongFieldsError::new().into()))
+                            .map(|e| T::deserialize(e.clone()).map_err(|_| WrongFieldsError::new().into()))
                             .collect::<Result<Vec<T>, ParseResponseError>>()?
                             .into();
                         this.marker = response.result.get(&*MARKER_KEY).map(|v| v.clone());
