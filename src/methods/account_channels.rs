@@ -35,8 +35,7 @@ impl FormatParams for &ChannelsRequest {
     }
 }
 
-// TODO: Remove `Clone`?
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ChannelResponse {
     pub ledger_hash: Option<Hash>,
     pub ledger_index: Option<u32>,
