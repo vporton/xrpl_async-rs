@@ -1,3 +1,4 @@
+extern crate serde;
 use reqwest::StatusCode;
 use derive_more::From;
 use lazy_static::lazy_static;
@@ -79,7 +80,7 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
 /// For WebSocket.
 #[derive(Debug)]
 pub struct StreamedResponse {
-    pub response: Response,
+    pub result: Response,
     pub id: u64,
     // TODO: `type`
 }
@@ -110,7 +111,7 @@ impl<'de> Deserialize<'de> for StreamedResponse {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         #[derive(Deserialize)]
         struct StreamedResponse2 {
-            pub response: Response,
+            pub result: Value,
             pub id: u64,
             // TODO: `type`
             // TODO: `warnings`
@@ -118,15 +119,14 @@ impl<'de> Deserialize<'de> for StreamedResponse {
             pub forwarded: Option<bool>,
             pub warning: Option<String>, // FIXME: Why is it missing in `Response2`?
         }
-        let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into();
+        let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into(); // FIXME: Triggers error at this line.
         // TODO: Implement without `clone`.
-        let result: Value = data.response.result;
         if data.status != "success" {
             return Err(serde::de::Error::custom("XPRL not success")).into();
         }
         Ok(StreamedResponse {
-            response: Response {
-                result,
+            result: Response {
+                result: data.result,
                 load: data.warning == Some(LOAD_KEY.clone()),
                 forwarded: data.forwarded == Some(true),
             },

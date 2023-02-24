@@ -173,7 +173,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                 Message::Text(msg) => {
                     let response: StreamedResponse = serde_json::from_str(&msg)?;
                     // TODO: Check `unsafe`s again.
-                    unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.response);
+                    unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.result);
                     if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
                         return Ok(response);
                     }
