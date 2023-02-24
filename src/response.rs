@@ -1,6 +1,6 @@
 extern crate serde;
 use lazy_static::lazy_static;
-use serde::{Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer};
 use serde_json::Value;
 use crate::connection::MyError;
 
@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for Response {
         }
         let data: Response2 = Response2::deserialize(deserializer)?.into();
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
-            return Err(serde::de::Error::custom("XPRL not success")).into(); // TODO
+            return Err(de::Error::custom("XPRL not success")).into(); // TODO
         }
         // TODO: Implement without `clone`.
         Ok(Self {
@@ -83,7 +83,7 @@ impl<'de> Deserialize<'de> for StreamedResponse {
         }
         let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into();
         if data.status != "success" {
-            return Err(serde::de::Error::custom("XPRL not success")).into(); // TODO
+            return Err(de::Error::custom("XPRL not success")).into(); // TODO
         }
         Ok(StreamedResponse {
             result: Response {

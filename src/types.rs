@@ -83,10 +83,8 @@ pub mod xrp {
     pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
         where D: Deserializer<'de>,
     {
-        use serde::de::Error;
-
         String::deserialize(deserializer)
-            .and_then(|string| decode_xrp_amount(&string).map_err(Error::custom))
+            .and_then(|string| decode_xrp_amount(&string).map_err(de::Error::custom))
     }
 }
 
