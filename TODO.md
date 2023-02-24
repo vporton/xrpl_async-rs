@@ -4,4 +4,5 @@
   (however, that is more low-level).
 - Remove dependency to `xrpl-rust`.
 - Doc comments.
+- Better error values.
 - `FIXME` and `TODO` in the sources.
