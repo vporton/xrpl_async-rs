@@ -50,7 +50,7 @@ impl<'de> Visitor<'de> for HashVisitor {
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where E: de::Error,
     {
-        Hash::from_hex(&value).map_err(|_| de::Error::custom("invalid hash"))
+        Hash::from_hex(&value).map_err(de::Error::custom)
     }
 }
 
@@ -86,7 +86,7 @@ pub mod xrp {
         use serde::de::Error;
 
         String::deserialize(deserializer)
-            .and_then(|string| decode_xrp_amount(&string).map_err(|err| Error::custom(err.to_string())))
+            .and_then(|string| decode_xrp_amount(&string).map_err(Error::custom))
     }
 }
 

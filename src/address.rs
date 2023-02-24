@@ -111,7 +111,7 @@ impl<'de> Visitor<'de> for AddressVisitor {
         where
             E: de::Error,
     {
-        Address::decode(&value).map_err(|_| de::Error::custom("invalid address"))
+        Address::decode(&value).map_err(de::Error::custom)
     }
 }
 
@@ -148,7 +148,7 @@ pub mod hex {
         use serde::de::Error;
 
         String::deserialize(deserializer)
-            .and_then(|string| Encoding::decode_hex(&string).map_err(|err| Error::custom(err.to_string())))
+            .and_then(|string| Encoding::decode_hex(&string).map_err(de::Error::custom))
     }
 }
 
@@ -176,7 +176,7 @@ pub mod base58 {
         use serde::de::Error;
 
         String::deserialize(deserializer)
-            .and_then(|string| Encoding::decode(&string).map_err(|err| Error::custom(err.to_string())))
+            .and_then(|string| Encoding::decode(&string).map_err(de::Error::custom))
     }
 }
 

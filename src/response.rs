@@ -77,7 +77,7 @@ impl<'de> Deserialize<'de> for Response {
             pub forwarded: Option<bool>,
         }
         let data: Response2 = Response2::deserialize(deserializer)?.into();
-        if data.result.get("status") != Some(&Value::String("success".to_owned())) {
+        if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
             return Err(serde::de::Error::custom("XPRL not success")).into();
         }
         // TODO: Implement without `clone`.

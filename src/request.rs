@@ -38,7 +38,7 @@ impl<'a, T: Serialize> TryFrom<&TypedRequest<'a, T>> for Request<'a>
 
 impl<'a, T: Serialize> Serialize for TypedRequest<'a, T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
-        Request::try_from(self).map_err(|_| serde::ser::Error::custom("Internal error: cannot serialize"))?.serialize(serializer)
+        Request::try_from(self).map_err(serde::ser::Error::custom)?.serialize(serializer)
     }
 }
 
