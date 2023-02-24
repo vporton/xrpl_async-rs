@@ -1,8 +1,8 @@
 extern crate serde;
 use lazy_static::lazy_static;
-use serde::{de, Deserialize, Deserializer};
+use serde::Deserialize;
 use serde_json::Value;
-use crate::connection::MyError;
+use crate::connection::{MyError, XrpError};
 
 lazy_static! {
     static ref LOAD_KEY: String = "load".to_string();
@@ -39,16 +39,11 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
     }
 }
 
-/// For WebSocket.
-#[derive(Debug)]
-pub struct StreamedResponse {
-    pub result: Response,
-    pub id: u64,
-    // TODO: `type`
-}
-
-impl<'de> Deserialize<'de> for Response {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+impl Response {
+    pub fn from_str(s: &str) -> Result<Self, MyError> {
+        Self::from_json(&serde_json::from_str::<Value>(s)?)
+    }
+    pub fn from_json(s: &Value) -> Result<Self, MyError> {
         #[derive(Deserialize)]
         struct Response2 {
             pub result: Value,
@@ -56,9 +51,9 @@ impl<'de> Deserialize<'de> for Response {
             pub warning: Option<String>,
             pub forwarded: Option<bool>,
         }
-        let data: Response2 = Response2::deserialize(deserializer)?.into();
+        let data: Response2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
-            return Err(de::Error::custom("XPRL not success")).into(); // TODO
+            return Err(XrpError::new().into());
         }
         // TODO: Implement without `clone`.
         Ok(Self {
@@ -69,8 +64,22 @@ impl<'de> Deserialize<'de> for Response {
     }
 }
 
-impl<'de> Deserialize<'de> for StreamedResponse {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+/// For WebSocket.
+#[derive(Debug)]
+pub struct StreamedResponse {
+    pub result: Response,
+    pub id: u64,
+    // TODO: `type`
+}
+
+// https://github.com/serde-rs/serde/issues/2382
+// impl<'de> Deserialize<'de> for Response {
+
+impl StreamedResponse {
+    pub fn from_str(s: &str) -> Result<Self, MyError> {
+        Self::from_json(&serde_json::from_str::<Value>(s)?)
+    }
+    pub fn from_json(s: &Value) -> Result<Self, MyError> {
         #[derive(Deserialize)]
         struct StreamedResponse2 {
             pub result: Value,
@@ -81,9 +90,9 @@ impl<'de> Deserialize<'de> for StreamedResponse {
             pub forwarded: Option<bool>,
             pub warning: Option<String>,
         }
-        let data: StreamedResponse2 = StreamedResponse2::deserialize(deserializer)?.into();
+        let data: StreamedResponse2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.status != "success" {
-            return Err(de::Error::custom("XPRL not success")).into(); // TODO
+            return Err(XrpError::new().into());
         }
         Ok(StreamedResponse {
             result: Response {
@@ -93,5 +102,9 @@ impl<'de> Deserialize<'de> for StreamedResponse {
             },
             id: data.id,
         })
+
     }
 }
+
+// https://github.com/serde-rs/serde/issues/2382
+// impl<'de> Deserialize<'de> for StreamedResponse;

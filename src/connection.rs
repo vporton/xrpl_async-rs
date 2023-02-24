@@ -6,7 +6,7 @@ use fragile::Fragile;
 use serde_json::Value;
 use async_trait::async_trait;
 use reqwest::{Client, StatusCode};
-use serde::{de, Deserialize};
+use serde::de;
 use workflow_websocket::client::{Message, WebSocket};
 use derive_more::From;
 use crate::connection::MyError::Connection;
@@ -104,7 +104,7 @@ impl Api for JsonRpcApi {
         if !result.status().is_success() {
             return Err(JsonRpcApiError::HttpStatus(result.status()));
         }
-        Ok(Response::deserialize(&result.json::<Value>().await?)?)
+        Ok(Response::from_json(&result.json::<Value>().await?)?)
     }
 }
 
@@ -178,7 +178,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                     return Err(WebSocketApiError::Disconnect);
                 },
                 Message::Text(msg) => {
-                    let response: StreamedResponse = serde_json::from_str(&msg)?;
+                    let response: StreamedResponse = StreamedResponse::from_str(&msg)?;
                     // TODO: Check `unsafe`s again.
                     unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.result);
                     if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
