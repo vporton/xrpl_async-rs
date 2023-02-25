@@ -1,5 +1,4 @@
-// extern crate serde;
-use std::convert::{From, Into};
+use std::convert::From;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use crate::address::{AccountPublicKey, Address};
@@ -62,7 +61,7 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
             pub source_tag: Option<u32>,
             pub destination_tag: Option<u32>,
         }
-        let value: ChannelPaginator2 = ChannelPaginator2::deserialize(deserializer)?.into();
+        let value: ChannelPaginator2 = ChannelPaginator2::deserialize(deserializer)?;
         Ok(ChannelPaginator {
             account: value.account,
             amount: value.amount,
@@ -81,7 +80,7 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
 
 impl<'a> PaginatorExtractor<'a> for ChannelPaginator {
     fn list_obj(result: &Value) -> Result<&Value, XrplError> {
-        Ok(result.get("channels").ok_or::<XrplError>(de::Error::missing_field("channels"))?)
+        result.get("channels").ok_or::<XrplError>(de::Error::missing_field("channels"))
     }
 }
 

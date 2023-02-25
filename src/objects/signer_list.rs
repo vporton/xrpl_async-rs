@@ -1,4 +1,4 @@
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use crate::address::Address;
 use crate::types::Hash;
 
@@ -8,7 +8,7 @@ pub struct SignerListFlags(u32);
 
 impl<'de> Deserialize<'de> for SignerListFlags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        Ok(SignerListFlags(u32::deserialize(deserializer)?.try_into().map_err(de::Error::custom)?))
+        Ok(SignerListFlags(u32::deserialize(deserializer)?))
     }
 }
 

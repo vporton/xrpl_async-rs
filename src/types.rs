@@ -50,7 +50,7 @@ impl<'de, const LENGTH: usize> Visitor<'de> for HashVisitor<LENGTH> {
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where E: de::Error,
     {
-        Hash::from_hex(&value).map_err(de::Error::custom)
+        Hash::from_hex(value).map_err(de::Error::custom)
     }
 }
 
@@ -121,13 +121,14 @@ const XPR_DIGITS_AFTER_DOT: usize = 6;
 pub struct TokenAmountError;
 
 impl TokenAmountError {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {}
     }
 }
 
 pub fn encode_token_amount(amount: f64) -> Result<String, TokenAmountError> {
-    if amount < -9999999999999999e80f64 || amount > 9999999999999999e80f64 {
+    if !(-9999999999999999e80f64..=9999999999999999e80f64).contains(&amount) {
         return Err(TokenAmountError);
     }
     Ok(amount.to_string())

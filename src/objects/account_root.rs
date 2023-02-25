@@ -1,4 +1,4 @@
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use crate::address::{AccountPublicKey, Address};
 use crate::types::Hash;
 
@@ -8,7 +8,7 @@ pub struct AccountRootFlags(u32);
 
 impl<'de> Deserialize<'de> for AccountRootFlags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-        Ok(AccountRootFlags(u32::deserialize(deserializer)?.try_into().map_err(de::Error::custom)?))
+        Ok(AccountRootFlags(u32::deserialize(deserializer)?))
     }
 }
 

@@ -81,7 +81,7 @@ impl<'de> Deserialize<'de> for AccountInfoResponse {
             pub queue_data: Option<QueueData>,
             pub validated: Option<bool>,
         }
-        let value: AccountInfoResponse2 = AccountInfoResponse2::deserialize(deserializer)?.into();
+        let value: AccountInfoResponse2 = AccountInfoResponse2::deserialize(deserializer)?;
         Ok(AccountInfoResponse {
             account_data: value.account_data,
             signer_list: value.signer_lists.first()

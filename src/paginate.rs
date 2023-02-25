@@ -16,7 +16,7 @@ lazy_static! {
 pub trait PaginatorExtractor<'de>: Deserialize<'de> + Unpin {
     fn list_obj(result: &Value) -> Result<&Value, XrplError>;
     fn list(result: &Value) -> Result<&Vec<Value>, XrplError> {
-        Ok(Self::list_obj(result)?.as_array().ok_or::<XrplError>(de::Error::custom("expected array"))?)
+        Self::list_obj(result)?.as_array().ok_or::<XrplError>(de::Error::custom("expected array"))
     }
 }
 
@@ -44,7 +44,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
         // TODO: Can do without `clone`?
         let list = T::list(&response.result)
             .map_err(de::Error::custom)?
-            .into_iter()
+            .iter()
             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
             .collect::<Result<Vec<T>, XrplError>>().map_err::<XrplError, _>(de::Error::custom)?
             .into();
@@ -56,10 +56,9 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
         // TODO: Can do without `clone`?
         let list: Vec<T> = T::list(&response.result)
             .map_err(de::Error::custom)?
-            .into_iter()
+            .iter()
             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
-            .collect::<Result<Vec<T>, XrplError>>().map_err::<XrplError, _>(de::Error::custom)?
-            .into();
+            .collect::<Result<Vec<T>, XrplError>>().map_err::<XrplError, _>(de::Error::custom)?;
         Ok((response, list))
     }
 }
@@ -77,7 +76,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
         let mut load: bool = false;
         if let Some(front) = this.list.pop_front() {
             Poll::Ready(Some(Ok(TypedResponse {
-                result: front.into(),
+                result: front,
                 load: load && this.list.is_empty(), // for the last item in the downloaded list
                 forwarded,
             })))
@@ -93,15 +92,15 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                         // TODO: Can do without `clone`?
                         this.list = T::list(&response.result)
                             .map_err(de::Error::custom)?
-                            .into_iter()
+                            .iter()
                             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
                             .collect::<Result<Vec<T>, XrplError>>()?
                             .into();
-                        this.marker = response.result.get(&*MARKER_KEY).map(|v| v.clone());
+                        this.marker = response.result.get(&*MARKER_KEY).cloned();
                         if let Some(front) = this.list.pop_front() {
                             Poll::Ready(Some(Ok(
                                 TypedResponse {
-                                    result: front.into(),
+                                    result: front,
                                     load: load && this.list.is_empty(), // for the last item in the downloaded list
                                     forwarded,
                                 }
@@ -116,7 +115,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
             if let Some(marker) = marker {
                 let mut request = this.request.clone();
                 if let Value::Object(obj) = request.params {
-                    let mut m = obj.clone();
+                    let mut m = obj;
                     m.insert(MARKER_KEY.clone(), marker);
                     request.params = Value::Object(m);
                 }

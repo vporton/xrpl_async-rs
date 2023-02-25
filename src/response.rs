@@ -1,4 +1,6 @@
 extern crate serde;
+
+use std::str::FromStr;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_json::Value;
@@ -40,9 +42,6 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
 }
 
 impl Response {
-    pub fn from_str(s: &str) -> Result<Self, XrplError> {
-        Self::from_json(&serde_json::from_str::<Value>(s)?)
-    }
     pub fn from_json(s: &Value) -> Result<Self, XrplError> {
         #[derive(Deserialize)]
         struct Response2 {
@@ -64,6 +63,14 @@ impl Response {
     }
 }
 
+impl FromStr for Response {
+    type Err = XrplError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_json(&serde_json::from_str::<Value>(s)?)
+    }
+}
+
 /// For WebSocket.
 #[derive(Debug)]
 pub struct StreamedResponse {
@@ -76,9 +83,6 @@ pub struct StreamedResponse {
 // impl<'de> Deserialize<'de> for Response {
 
 impl StreamedResponse {
-    pub fn from_str(s: &str) -> Result<Self, XrplError> {
-        Self::from_json(&serde_json::from_str::<Value>(s)?)
-    }
     pub fn from_json(s: &Value) -> Result<Self, XrplError> {
         #[derive(Deserialize)]
         struct StreamedResponse2 {
@@ -103,6 +107,14 @@ impl StreamedResponse {
             id: data.id,
         })
 
+    }
+}
+
+impl FromStr for StreamedResponse {
+    type Err = XrplError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_json(&serde_json::from_str::<Value>(s)?)
     }
 }
 

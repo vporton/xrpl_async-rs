@@ -2,6 +2,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
+use std::str::FromStr;
 use fragile::Fragile;
 use serde_json::Value;
 use async_trait::async_trait;
@@ -18,6 +19,7 @@ use crate::response::{Response, StreamedResponse};
 pub struct XrplStatusError;
 
 impl XrplStatusError {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {}
     }
@@ -120,7 +122,7 @@ impl WebSocketApi {
         }
     }
     pub async fn reconnect(&self) -> Result<(), WebSocketApiError> {
-        Ok(self.client.reconnect().await.map_err(|e| XrplError::Connection(e.to_string()))?)
+        self.client.reconnect().await.map_err(|e| XrplError::Connection(e.to_string()))
     }
 }
 

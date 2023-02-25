@@ -12,6 +12,7 @@ use serde::de::Visitor;
 pub struct WrongPrefixError;
 
 impl WrongPrefixError {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {}
     }
@@ -90,7 +91,6 @@ pub type SeedValue = Encoding<16, 0x21, 's'>;
 pub type ValidationOrNodePublicKey = Encoding<33, 0x1C, 'n'>;
 
 impl<
-    'de,
     const LENGTH: usize,
     const TYPE_PREFIX: u8,
     const HUMAN_REPRESENTATION_STARTS_WITH: char,
@@ -126,7 +126,7 @@ impl<
         where
             E: de::Error,
     {
-        Self::Value::decode(&value).map_err(de::Error::custom)
+        Self::Value::decode(value).map_err(de::Error::custom)
     }
 }
 
