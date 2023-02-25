@@ -39,10 +39,19 @@ impl Serialize for AccountInfoRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct QueueData {
+    pub txn_count: u32,
+    // FIXME: more fields
+}
+
+#[derive(Debug, Deserialize)]
 pub struct AccountInfoResponse {
     pub account_data: AccountRoot,
     pub signer_lists: Vec<SignerList>, // FIXME: The array is always one, element; transform.
-    // FIXME: more fields
+    pub ledger_current_index: Option<u32>, // FIXME: mutually exclusive with `ledger_index`
+    pub ledger_index: Option<u32>, // FIXME: mutually exclusive with `ledger_index`
+    pub queue_data: Option<QueueData>,
+    pub validated: Option<bool> // FIXME: None == false
 }
 
 pub async fn account_info<'a, A>(api: &'a A, data: &'a AccountInfoRequest)
