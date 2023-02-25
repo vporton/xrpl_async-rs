@@ -1,9 +1,15 @@
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{de, Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use crate::address::Address;
+use crate::connection::{Api, XrplError};
+use crate::methods::account_channels::ChannelPaginator;
+use crate::paginate::{Paginator, PaginatorExtractor};
+use crate::request::TypedRequest;
+use crate::response::TypedResponse;
 use crate::types::{LedgerForRequest, LedgerForResponse};
 
 #[derive(Debug, Serialize)]
-struct AccountLinesRequest {
+pub struct AccountLinesRequest {
     pub account: Address,
     #[serde(flatten)]
     pub ledger: LedgerForRequest,
@@ -12,7 +18,7 @@ struct AccountLinesRequest {
 }
 
 #[derive(Debug)]
-pub struct TrustLineObject {
+pub struct AccountLinesPaginator {
     pub account: Address,
     pub balance: f64,
     pub currency: String,
@@ -28,10 +34,10 @@ pub struct TrustLineObject {
     pub freeze_peer: bool,
 }
 
-impl<'de> Deserialize<'de> for TrustLineObject {
+impl<'de> Deserialize<'de> for AccountLinesPaginator {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         #[derive(Deserialize)]
-        struct TrustLineObject2 {
+        struct AccountLinesPaginator2 {
             pub account: Address,
             #[serde(with = "crate::types::token")]
             pub balance: f64,
@@ -48,8 +54,8 @@ impl<'de> Deserialize<'de> for TrustLineObject {
             pub freeze: Option<bool>, // FIXME: None == false
             pub freeze_peer: Option<bool>, // FIXME: None == false
         }
-        let value: TrustLineObject2 = TrustLineObject2::deserialize(deserializer)?;
-        Ok(TrustLineObject {
+        let value: AccountLinesPaginator2 = AccountLinesPaginator2::deserialize(deserializer)?;
+        Ok(AccountLinesPaginator {
             account: value.account,
             balance: value.balance,
             currency: value.currency,
@@ -70,10 +76,30 @@ impl<'de> Deserialize<'de> for TrustLineObject {
 #[derive(Debug, Deserialize)]
 pub struct AccountLinesResponse {
     pub account: Address,
-    pub lines: Vec<TrustLineObject>,
     pub ledger_current_index: u32,
     #[serde(flatten)]
     pub ledger: LedgerForResponse,
 }
 
-// TODO
+impl<'a> PaginatorExtractor<'a> for AccountLinesPaginator {
+    fn list_obj(result: &Value) -> Result<&Value, XrplError> {
+        result.get("lines").ok_or::<XrplError>(de::Error::missing_field("lines"))
+    }
+}
+
+pub async fn account_lines<'a, A>(
+    api: &'a A,
+    data: &'a AccountLinesRequest,
+) -> Result<(TypedResponse<AccountLinesResponse>, Paginator<'a, A, ChannelPaginator>), A::Error>
+    where A: Api,
+          A::Error: From<XrplError>
+{
+    let request = TypedRequest {
+        command: "account_lines",
+        api_version: Some(1),
+        data,
+    };
+    let (response, paginator) =
+        Paginator::start(api, (&request).try_into().map_err(de::Error::custom)?).await?; // TODO: wrong error
+    Ok((response.try_into()?, paginator))
+}
