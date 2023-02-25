@@ -51,7 +51,7 @@ pub struct AccountInfoResponse {
     pub ledger_current_index: Option<u32>, // FIXME: mutually exclusive with `ledger_index`
     pub ledger_index: Option<u32>, // FIXME: mutually exclusive with `ledger_index`
     pub queue_data: Option<QueueData>,
-    pub validated: Option<bool> // FIXME: None == false
+    pub validated: Option<bool>, // FIXME: None == false
 }
 
 pub async fn account_info<'a, A>(api: &'a A, data: &'a AccountInfoRequest)
