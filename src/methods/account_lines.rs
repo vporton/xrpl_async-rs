@@ -72,7 +72,6 @@ pub struct AccountLinesResponse {
     pub account: Address,
     pub lines: Vec<TrustLineObject>,
     pub ledger_current_index: u32,
-    // FIXME: Check `Ledger` usage here and in other places.
     #[serde(flatten)]
     pub ledger: LedgerForResponse,
 }
