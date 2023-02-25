@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::address::Address;
-use crate::types::LedgerForRequest;
+use crate::types::{LedgerForRequest, LedgerForResponse};
 
 #[derive(Debug, Serialize)]
 struct AccountLinesRequest {
@@ -21,9 +21,8 @@ pub struct AccountLinesResponse {
     pub account: Address,
     pub lines: Vec<TrustLineObject>,
     pub ledger_current_index: u32, // FIXME: Check `Ledger` usage here and in other places.
-    // FIXME
-    // #[serde(flatten)]
-    // ledger: Ledger,
+    #[serde(flatten)]
+    pub ledger: LedgerForResponse,
 }
 
 // TODO
