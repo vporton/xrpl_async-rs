@@ -5,4 +5,5 @@
 - Remove dependency to `xrpl-rust`.
 - Doc comments.
 - Better error values.
+- Debug print `Hash` and `Account` in hex.
 - `FIXME` and `TODO` in the sources.
