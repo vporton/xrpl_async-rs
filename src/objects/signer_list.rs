@@ -2,7 +2,7 @@ use serde::{de, Deserialize, Deserializer};
 use crate::address::Address;
 use crate::types::Hash;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct SignerListFlags(u32);
 // TODO: Values of flags: https://xrpl.org/signerlist.html#signerlist-flags
 
@@ -12,7 +12,7 @@ impl<'de> Deserialize<'de> for SignerListFlags {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SignerEntry {
     #[serde(rename = "Account")]
     pub account: Address,
@@ -22,7 +22,7 @@ pub struct SignerEntry {
     pub wallet_locator: Hash<32>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SignerList {
     #[serde(rename = "Flags")]
     pub flags: SignerListFlags,

@@ -1,5 +1,5 @@
 use std::convert::From;
-use serde::{de, Deserialize, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use crate::address::Address;
 use crate::connection::{Api, XrplError};
 use crate::objects::account_root::AccountRoot;
@@ -39,23 +39,64 @@ impl Serialize for AccountInfoRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct QueueData {
-    pub txn_count: u32,
-    // FIXME: more fields
+pub struct QueuedTransaction {
+    pub auth_change: bool,
+    #[serde(with = "crate::types::xrp")]
+    pub fee: u64,
+    pub fee_level: u64,
+    #[serde(with = "crate::types::xrp")]
+    pub max_spend_drops: u64,
+    pub seq: u32,
 }
 
 #[derive(Debug, Deserialize)]
+pub struct QueueData {
+    pub txn_count: u32,
+    pub auth_change_queued: Option<bool>,
+    pub lowest_sequence: Option<u32>,
+    pub highest_sequence: Option<u32>,
+    #[serde(with = "crate::types::xrp")]
+    pub max_spend_drops_total: u64,
+    pub transactions: Vec<QueuedTransaction>,
+}
+
+#[derive(Debug)]
 pub struct AccountInfoResponse {
     pub account_data: AccountRoot,
-    pub signer_lists: Vec<SignerList>, // FIXME: The array is always one, element; transform.
-    pub ledger_current_index: Option<u32>, // FIXME: mutually exclusive with `ledger_index`
-    pub ledger_index: Option<u32>, // FIXME: mutually exclusive with `ledger_index`
+    pub signer_list: SignerList,
+    pub ledger_index: u32,
+    pub ledger_index_is_current: bool,
     pub queue_data: Option<QueueData>,
-    pub validated: Option<bool>, // FIXME: None == false
+    pub validated: bool,
+}
+
+impl<'de> Deserialize<'de> for AccountInfoResponse {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        #[derive(Debug, Deserialize)]
+        pub struct AccountInfoResponse2 {
+            pub account_data: AccountRoot,
+            pub signer_lists: Vec<SignerList>,
+            pub ledger_current_index: Option<u32>,
+            pub ledger_index: Option<u32>,
+            pub queue_data: Option<QueueData>,
+            pub validated: Option<bool>,
+        }
+        let value: AccountInfoResponse2 = AccountInfoResponse2::deserialize(deserializer)?.into();
+        Ok(AccountInfoResponse {
+            account_data: value.account_data,
+            signer_list: value.signer_lists.first()
+                .ok_or_else(|| de::Error::custom("missing signer_lists element"))?.clone(),
+            ledger_index: value.ledger_index.or(value.ledger_current_index)
+                .ok_or_else(|| de::Error::custom("missing ledger_index"))?,
+            ledger_index_is_current: value.ledger_current_index.is_some(),
+            queue_data: value.queue_data,
+            validated: value.validated == Some(true),
+        })
+    }
 }
 
 pub async fn account_info<'a, A>(api: &'a A, data: &'a AccountInfoRequest)
-    -> Result<TypedResponse<AccountInfoResponse>, A::Error>
+                                 -> Result<TypedResponse<AccountInfoResponse>, A::Error>
     where A: Api,
           A::Error: From<XrplError>
 {

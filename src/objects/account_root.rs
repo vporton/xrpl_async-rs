@@ -2,7 +2,7 @@ use serde::{de, Deserialize, Deserializer};
 use crate::address::{AccountPublicKey, Address};
 use crate::types::Hash;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct AccountRootFlags(u32);
 // TODO: Values of flags: https://xrpl.org/accountroot.html
 
