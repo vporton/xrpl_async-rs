@@ -12,8 +12,18 @@ struct AccountLinesRequest {
 }
 
 #[derive(Debug, Deserialize)]
-struct AccountLinesResponse {
+pub struct TrustLineObject {
     // FIXME: more fields
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AccountLinesResponse {
+    pub account: Address,
+    pub lines: Vec<TrustLineObject>,
+    pub ledger_current_index: u32, // FIXME: Check `Ledger` usage here and in other places.
+    // FIXME
+    // #[serde(flatten)]
+    // ledger: Ledger,
 }
 
 // TODO
