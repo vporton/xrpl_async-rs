@@ -3,7 +3,7 @@ use std::iter::{once, repeat};
 use std::num::ParseIntError;
 use hex::{decode, FromHexError};
 use derive_more::{Display, From};
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde::de::Visitor;
 use serde::ser::SerializeMap;
 use serde_json::json;
@@ -117,7 +117,7 @@ pub mod option_xrp {
 
 const XPR_DIGITS_AFTER_DOT: usize = 6;
 
-#[derive(Debug)]
+#[derive(Debug, Display)] // TODO: more particular `Display` format
 pub struct TokenAmountError;
 
 impl TokenAmountError {
@@ -129,13 +129,58 @@ impl TokenAmountError {
 
 pub fn encode_token_amount(amount: f64) -> Result<String, TokenAmountError> {
     if !(-9999999999999999e80f64..=9999999999999999e80f64).contains(&amount) {
-        return Err(TokenAmountError);
+        return Err(TokenAmountError::new());
     }
     Ok(amount.to_string())
 }
 
 pub fn decode_token_amount(s: &str) -> Result<f64, TokenAmountError> {
     s.parse::<f64>().map_err(|_| TokenAmountError::new())
+}
+
+pub mod token {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use super::*;
+
+    pub fn serialize<S>(x: &f64, s: S) -> Result<S::Ok, S::Error>
+        where S: Serializer,
+    {
+        s.serialize_str(&encode_token_amount(*x).map_err(ser::Error::custom)?)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<f64, D::Error>
+        where D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)
+            .and_then(|string| decode_token_amount(&string).map_err(de::Error::custom))
+    }
+}
+
+pub mod option_token {
+    use super::*;
+
+    struct Wrap(f64);
+
+    impl<'de> Deserialize<'de> for Wrap {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            Ok(Wrap(token::deserialize(deserializer)?))
+        }
+    }
+
+    pub fn serialize<S: Serializer>(x: &Option<f64>, s: S) -> Result<S::Ok, S::Error>
+    {
+        if let Some(x) = x {
+            token::serialize(x, s)
+        } else {
+            None::<()>.serialize(s)
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<f64>, D::Error>
+    {
+        let result = Option::<Wrap>::deserialize(deserializer)?;
+        Ok(result.map(|v| v.0))
+    }
 }
 
 pub fn xrp_to_human_representation(amount: u64) -> String {

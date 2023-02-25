@@ -13,6 +13,12 @@ struct AccountLinesRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct TrustLineObject {
+    pub account: Address,
+    #[serde(with = "crate::types::token")]
+    pub balance: f64,
+    pub currency: String,
+    #[serde(with = "crate::types::token")]
+    pub limit: f64,
     // FIXME: more fields
 }
 
