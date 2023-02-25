@@ -2,7 +2,7 @@ use std::convert::From;
 use serde::{de, Deserialize, Serialize};
 use crate::address::Address;
 use crate::connection::{Api, XrplError};
-use crate::types::{Hash, Ledger};
+use crate::types::{Hash, LedgerForRequest};
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
 
@@ -10,7 +10,7 @@ use crate::response::TypedResponse;
 pub struct CurrenciesRequest {
     pub account: Address,
     #[serde(flatten)]
-    pub ledger: Ledger,
+    pub ledger: LedgerForRequest,
 }
 
 #[derive(Debug, Deserialize)]

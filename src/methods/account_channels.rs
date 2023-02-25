@@ -3,7 +3,7 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use crate::address::{AccountPublicKey, Address};
 use crate::connection::{Api, XrplError};
-use crate::types::{Hash, Ledger};
+use crate::types::{Hash, LedgerForRequest};
 use crate::paginate::{Paginator, PaginatorExtractor};
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
@@ -13,7 +13,7 @@ pub struct ChannelsRequest {
     pub account: Address,
     pub destination_account: Option<Address>,
     #[serde(flatten)]
-    pub ledger: Ledger,
+    pub ledger: LedgerForRequest,
     pub limit: Option<u16>,
 }
 

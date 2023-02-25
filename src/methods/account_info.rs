@@ -4,14 +4,14 @@ use crate::address::Address;
 use crate::connection::{Api, XrplError};
 use crate::objects::account_root::AccountRoot;
 use crate::objects::signer_list::SignerList;
-use crate::types::Ledger;
+use crate::types::LedgerForRequest;
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
 
 #[derive(Debug)]
 pub struct AccountInfoRequest {
     pub account: Address,
-    pub ledger: Ledger,
+    pub ledger: LedgerForRequest,
     pub queue: bool,
     pub signer_lists: bool,
 }
@@ -22,7 +22,7 @@ impl Serialize for AccountInfoRequest {
         struct AccountInfoRequest2 {
             pub account: Address,
             #[serde(flatten)]
-            pub ledger: Ledger,
+            pub ledger: LedgerForRequest,
             pub queue: Option<bool>,
             pub signer_lists: Option<bool>,
             pub strict: Option<bool>,

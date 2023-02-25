@@ -5,7 +5,7 @@ use workflow_websocket::client::{Options, WebSocket};
 use xrpl_async::methods::account_channels::{account_channels, ChannelsRequest};
 use xrpl_async::address::Address;
 use xrpl_async::connection::{Api, JsonRpcApi, XrplError, WebSocketApi};
-use xrpl_async::types::Ledger;
+use xrpl_async::types::LedgerForRequest;
 
 async fn basic_test<A: Api>(api: &A)
     where A::Error: From<XrplError> + Debug
@@ -13,7 +13,7 @@ async fn basic_test<A: Api>(api: &A)
     let request = ChannelsRequest {
         account: Address::decode("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn").unwrap(),
         destination_account: None,
-        ledger: Ledger::Validated,
+        ledger: LedgerForRequest::Validated,
         limit: None,
     };
     let (response, mut paginator) = account_channels(api, &request).await.unwrap();

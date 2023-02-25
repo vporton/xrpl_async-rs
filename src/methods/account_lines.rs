@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 use crate::address::Address;
-use crate::types::Ledger;
+use crate::types::LedgerForRequest;
 
 #[derive(Debug, Serialize)]
 struct AccountLinesRequest {
     pub account: Address,
     #[serde(flatten)]
-    pub ledger: Ledger,
+    pub ledger: LedgerForRequest,
     pub peer: Option<Address>,
     pub limit: Option<u16>,
 }

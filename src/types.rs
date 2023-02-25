@@ -155,7 +155,7 @@ pub fn xrp_to_human_representation(amount: u64) -> String {
 // TODO: Unit tests.
 
 #[derive(Clone, Debug)]
-pub enum Ledger {
+pub enum LedgerForRequest {
     Index(u32),
     Hash(Hash<32>),
     Validated,
@@ -163,15 +163,15 @@ pub enum Ledger {
     Current,
 }
 
-impl Serialize for Ledger {
+impl Serialize for LedgerForRequest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let mut map = serializer.serialize_map(Some(1))?;
         match self {
-            Ledger::Index(ind) => map.serialize_entry("ledger_index", &json!(ind))?,
-            Ledger::Hash(hash) => map.serialize_entry("ledger_hash", &json!(hash))?,
-            Ledger::Validated => map.serialize_entry("ledger_index", &json!("validated"))?,
-            Ledger::Closed => map.serialize_entry("ledger_index", &json!("closed"))?,
-            Ledger::Current => map.serialize_entry("ledger_index", &json!("current"))?,
+            LedgerForRequest::Index(ind) => map.serialize_entry("ledger_index", &json!(ind))?,
+            LedgerForRequest::Hash(hash) => map.serialize_entry("ledger_hash", &json!(hash))?,
+            LedgerForRequest::Validated => map.serialize_entry("ledger_index", &json!("validated"))?,
+            LedgerForRequest::Closed => map.serialize_entry("ledger_index", &json!("closed"))?,
+            LedgerForRequest::Current => map.serialize_entry("ledger_index", &json!("current"))?,
         }
         map.end()
     }
