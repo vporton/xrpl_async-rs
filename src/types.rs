@@ -77,7 +77,7 @@ pub mod xrp {
     pub fn serialize<S>(x: &u64, s: S) -> Result<S::Ok, S::Error>
         where S: Serializer,
     {
-        s.serialize_str(&super::encode_xrp_amount(*x))
+        s.serialize_str(&encode_xrp_amount(*x))
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
@@ -174,5 +174,29 @@ impl Serialize for LedgerForRequest {
             LedgerForRequest::Current => map.serialize_entry("ledger_index", &json!("current"))?,
         }
         map.end()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct LedgerForResponse {
+    pub index: Option<u32>,
+    pub hash: Option<Hash<32>>,
+    pub current: bool,
+}
+
+impl<'de> Deserialize<'de> for LedgerForResponse {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        #[derive(Debug, Deserialize)]
+        pub struct LedgerForResponse2 {
+            pub ledger_current_index: Option<u32>,
+            pub ledger_index: Option<u32>,
+            pub ledger_hash: Option<Hash<32>>,
+        }
+        let value: LedgerForResponse2 = LedgerForResponse2::deserialize(deserializer)?;
+        Ok(LedgerForResponse {
+            index: value.ledger_current_index.or(value.ledger_index),
+            hash: value.ledger_hash,
+            current: value.ledger_current_index.is_some(),
+        })
     }
 }
