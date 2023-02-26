@@ -1,0 +1,11 @@
+[package]
+name = "xrpl_async_macroses"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+edition = "2021"
+proc-macro = true
+path = "src/lib.rs"
+
+[dependencies]

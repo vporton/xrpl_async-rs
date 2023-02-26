@@ -3,11 +3,21 @@ name = "xrpl_async"
 version = "0.0.1"
 edition = "2021"
 
+[lib]
+name = "xrpl_async"
+path = "src/lib.rs"
+
 [[bin]]
 name = "manual_test"
 test = true
 
+[workspace]
+members = [
+    "macroses",
+]
+
 [dependencies]
+xrpl_async_macroses = { path = "macroses" }
 #base58check = "0.1.0" # BitCoin not XRPL format
 #derive = "1.0.0"
 derive_more = "0.99.17"
