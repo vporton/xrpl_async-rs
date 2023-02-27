@@ -49,10 +49,10 @@ impl<'de> Deserialize<'de> for AccountLinesPaginator {
             pub quality_out: u32,
             pub no_ripple: Option<bool>,
             pub no_ripple_peer: Option<bool>,
-            pub authorized: Option<bool>, // FIXME: None == false
-            pub peer_authorized: Option<bool>, // FIXME: None == false
-            pub freeze: Option<bool>, // FIXME: None == false
-            pub freeze_peer: Option<bool>, // FIXME: None == false
+            pub authorized: Option<bool>,
+            pub peer_authorized: Option<bool>,
+            pub freeze: Option<bool>,
+            pub freeze_peer: Option<bool>,
         }
         let value: AccountLinesPaginator2 = AccountLinesPaginator2::deserialize(deserializer)?;
         Ok(AccountLinesPaginator {
