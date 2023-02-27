@@ -9,6 +9,7 @@ use syn::{Data::{Struct}, DeriveInput, Fields::Named, AttrStyle, Lit, Meta, Meta
           parse_macro_input};
 use proc_macro::TokenStream;
 use quote::quote;
+use itertools::Itertools;
 // use crate::serialize::impl_serialize;
 
 /// ```
@@ -30,7 +31,7 @@ pub fn serialize(input: TokenStream) -> TokenStream {
         panic!("derive(Serialize) works only with named fields.")
     };
     // TODO: better error checking
-    let fields_data = fields.named.into_iter().map(|field| -> syn::parse::Result<_> { // TODO: Need `Result`?
+    let fields_data = fields.named.into_iter().map(|field| {
         for attr in field.attrs {
             if let AttrStyle::Outer = attr.style {
                 if let Ok(Meta::List(MetaList { path, paren_token: _, nested })) = attr.parse_meta() {
@@ -38,13 +39,13 @@ pub fn serialize(input: TokenStream) -> TokenStream {
                         for kv in nested.iter() {
                             if let NestedMeta::Meta(Meta::NameValue(kv)) = kv {
                                 if kv.path.is_ident("skip") {
-                                    return Ok(None);
+                                    None;
                                 } else if kv.path.is_ident("nth") {
-                                        let Lit::Int(lit) = &kv.lit else {
+                                    let Lit::Int(lit) = &kv.lit else {
                                         panic!("binary(nth) must be an integer.")
                                     };
                                     let nth = lit.base10_parse::<u16>()?;
-                                    return Ok(Some((field.ident, field.ty, nth)));
+                                    return Some((field.ty, nth, field.ident));
                                 }
                             }
                         }
@@ -53,10 +54,12 @@ pub fn serialize(input: TokenStream) -> TokenStream {
                 }
             }
         }
-        Ok(None) // TODO: or `panic!`?
+        None // TODO: or `panic!`?
     });
-    let fields_data = fields_data.collect::<Result<Vec<_>, _>>().expect("TODO error")
-        .into_iter().flatten();
+    // let fields_data = fields_data.collect::<Vec<_>>().into_iter().flatten();
+    let fields_data = fields_data.flatten()
+        .sorted_by(|a, b| Ord::cmp(&(a.0::type_code(), a.1), &(b.0::type_code(), b.1)));
+
 
     let struct_name = ast.ident;
     quote!(
