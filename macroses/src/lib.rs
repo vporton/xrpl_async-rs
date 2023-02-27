@@ -3,7 +3,8 @@ mod serialize;
 extern crate proc_macro;
 // #[macro_use]
 // extern crate quote;
-use syn::{Data::{Struct}, DeriveInput, Fields::{self, Named}, AttrStyle, Meta, MetaList, parse_macro_input};
+use syn::{Data::{Struct}, DeriveInput, Fields::{self, Named}, AttrStyle, Meta, MetaList, NestedMeta,
+          parse_macro_input};
 use proc_macro::TokenStream;
 use quote::quote;
 // use crate::serialize::impl_serialize;
@@ -11,7 +12,7 @@ use quote::quote;
 /// ```
 /// #[derive(BinarySerialize)]
 /// struct Transaction {
-///     #[field(nth = 1)]
+///     #[binary(nth = 1)]
 ///     account: Address,
 ///     // ...
 /// }
@@ -26,7 +27,14 @@ pub fn serialize(input: TokenStream) -> TokenStream {
                 for attr in field.attrs {
                     if let AttrStyle::Outer = attr.style {
                         if let Ok(Meta::List(MetaList { path, paren_token, nested })) = attr.parse_meta() {
-                            if path.is_ident("field") {
+                            if path.is_ident("binary") {
+                                for kv in nested.iter() {
+                                    if let NestedMeta::Meta(Meta::NameValue(kv)) = kv {
+                                        if kv.path.is_ident("nth") {
+
+                                        }
+                                    }
+                                }
                                 // FIXME
                             }
                         }
