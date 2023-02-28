@@ -112,7 +112,7 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                 },
                 field_code: #nth,
                 value: &self.#field_name,
-            }.serialize(writer);
+            }.serialize(writer)?;
         )
     });
     let body = TokenStream2::from_iter(body);
@@ -122,6 +122,7 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
         impl Serialize for BinaryFormat<'a, #struct_name> {
             fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
                 #body
+                Ok(())
             }
         }
     ).into()
