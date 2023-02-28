@@ -48,13 +48,18 @@ impl<'a, T> XrplField<'a, T> {
 
 // TODO: `pub`?
 pub fn serialize_length(writer: &mut dyn Write, length: usize) -> io::Result<()> {
-    #[allow(clippy::if_same_then_else)] // FIXME
+    // Essentially copied from https://github.com/gmosx/xrpl_sdk_rust/blob/1ba1c8872caa1a2f80db4346f685e8c940518bc9/xrpl_binary_codec/src/serializer.rs:
     if length <= 192 {
         writer.write_u8(length as u8)?;
     } else if length <= 12480 {
-        // FIXME
+        let length = length - 192;
+        writer.write_u8(193 + (length >> 8) as u8)?;
+        writer.write_u8((length & 0xff) as u8)?;
     } else if length <= 918744 {
-        // FIXME
+        let length = length - 12481;
+        writer.write_u8(241 + (length >> 16) as u8)?;
+        writer.write_u8(((length >> 8) & 0xff) as u8)?;
+        writer.write_u8((length & 0xff) as u8)?;
     } else {
         panic!("too long data"); // TODO: better error than panic?
     }
