@@ -94,7 +94,7 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                         let id = lit.value();
                         let field_info = &DEFINITIONS.fields[&id];
                         let type_code = DEFINITIONS.types[&field_info.r#type]; // a little inefficient because of string index
-                        return Some((type_code, field_info.nth, id));
+                        return Some((type_code, field_info.nth, &field.ident));
                     }
                 }
             }
@@ -106,13 +106,14 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let body = fields_data.map(|field| {
         let type_code = field.0;
         let nth = field.1;
+        let attr_name = field.2;
         quote!(
             XrplField {
-                xrpl_type: XrplType {
+                xrpl_type: &XrplType {
                     type_code: #type_code,
                 },
                 field_code: #nth,
-                value: self,
+                value: &self.#attr_name,
             }.serialize(writer);
         )
     });
