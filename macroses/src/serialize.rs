@@ -104,14 +104,14 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let fields_data = fields_data.flatten()
         .sorted_by(|a, b| Ord::cmp(&(a.0, a.1), &(b.0, b.1)));
     let body = fields_data.map(|field| {
-        let (type_code, nth, attr_name) = field;
+        let (type_code, nth, field_name) = field;
         quote!(
             XrplField {
                 xrpl_type: &XrplType {
                     type_code: #type_code,
                 },
                 field_code: #nth,
-                value: &self.#attr_name,
+                value: &self.#field_name,
             }.serialize(writer);
         )
     });
