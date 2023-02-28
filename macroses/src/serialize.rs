@@ -79,7 +79,7 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                                     let id = lit.value();
                                     let field_info = &DEFINITIONS.fields[&id];
                                     let type_code = DEFINITIONS.types[&field_info.r#type]; // a little inefficient because of string index
-                                    return Some((type_code, field_info.nth, id/*, field.ty*/));
+                                    return Some((type_code, field_info.nth, id));
                                 }
                             }
                         }
