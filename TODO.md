@@ -1,4 +1,3 @@
-- Signing transactions.
 - X-addresses: https://xrpl.org/basic-data-types.html
 - Generating private keys and transforming to public and addresses.
 - Replace `workflow-websocket` by plain `tokio-tungstenite`?
