@@ -62,33 +62,44 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let Named(fields) = &s.fields else {
         panic!("derive(Serialize) works only with named fields.")
     };
-    // TODO: better error checking
     let fields_data = (&fields.named).into_iter().map(|field| -> Option<_> {
         for attr in &field.attrs {
             if let AttrStyle::Outer = attr.style {
                 if let Ok(Meta::List(MetaList { path, paren_token: _, nested })) = attr.parse_meta() {
                     if path.is_ident("binary") {
-                        for kv in nested.iter() {
-                            if let NestedMeta::Meta(Meta::NameValue(kv)) = kv {
-                                if kv.path.is_ident("skip") {
-                                    return None;
-                                } else if kv.path.is_ident("id") {
-                                    let Lit::Str(lit) = &kv.lit else {
-                                        panic!("binary(id) must be a string.")
-                                    };
-                                    let id = lit.value();
-                                    let field_info = &DEFINITIONS.fields[&id];
-                                    let type_code = DEFINITIONS.types[&field_info.r#type]; // a little inefficient because of string index
-                                    return Some((type_code, field_info.nth, id));
-                                }
-                            }
+                        let meta: Vec<_> = nested.into_iter().collect();
+                        if meta.iter().any(|v| if let NestedMeta::Meta(Meta::Path(path)) = v {
+                            path.is_ident("skip")
+                        } else {
+                            false
+                        }) {
+                            return None;
                         }
-                        panic!("No binary(nth)");
+                        let kvs: Vec<_> = meta.iter().filter_map(|v| if let NestedMeta::Meta(Meta::NameValue(kv)) = v {
+                            if kv.path.is_ident("id") {
+                                Some(kv)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }).collect();
+                        if kvs.len() != 1 {
+                            panic!("Must be exactly one binary(id)");
+                        }
+                        let pair = kvs.first().unwrap();
+                        let Lit::Str(lit) = &pair.lit else {
+                            panic!("binary(id) must be a string.")
+                        };
+                        let id = lit.value();
+                        let field_info = &DEFINITIONS.fields[&id];
+                        let type_code = DEFINITIONS.types[&field_info.r#type]; // a little inefficient because of string index
+                        return Some((type_code, field_info.nth, id));
                     }
                 }
             }
         }
-        None // TODO: or `panic!`?
+        panic!("No #[binary] attribute for field {:?}", field.ident);
     });
     let fields_data = fields_data.flatten()
         .sorted_by(|a, b| Ord::cmp(&(a.0, a.1), &(b.0, b.1)));
