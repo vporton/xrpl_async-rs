@@ -6,5 +6,7 @@
 - Doc comments.
 - Better error values.
 - Debug print `Hash` and `Account` in hex.
+- Asynchronous interface for watching when a ledger/transaction becomes
+  included into the ledger.
 - `FIXME` and `TODO` in the sources.
 - File `TODO-checkboxes.md`.
