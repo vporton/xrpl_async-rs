@@ -107,14 +107,13 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
         let type_code = field.0;
         let nth = field.1;
         quote!(
-            BinaryFormat(XrplField {
+            XrplField {
                 xrpl_type: XrplType {
                     type_code: #type_code,
                 },
                 field_code: #nth,
                 value: self,
-            })
-                .serialize(writer);
+            }.serialize(writer);
         )
     });
     let body = TokenStream2::from_iter(body);

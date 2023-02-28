@@ -19,19 +19,19 @@ pub struct XrplType {
     pub type_code: u16,
 }
 
-pub struct XrplField<'a, T> {
+pub struct XrplBinaryField<'a, T> {
     pub xrpl_type: &'a XrplType,
     pub field_code: u16,
-    pub value: T,
+    pub value: &'a T,
 }
 
-impl<'a, T> XrplField<'a, T> {
+impl<'a, T> XrplBinaryField<'a, T> {
     pub fn type_code(&self) -> u16 {
         self.xrpl_type.type_code
     }
 }
 
-impl<'a, T> XrplField<'a, T> {
+impl<'a, T> XrplBinaryField<'a, T> {
     pub fn field_uid(&self) -> Vec<u8> {
         // https://xrpl.org/serialization.html#field-ids
         match (self.type_code() >= 16, self.field_code >= 16) {
@@ -66,12 +66,12 @@ pub fn serialize_length(writer: &mut dyn Write, length: usize) -> io::Result<()>
     Ok(())
 }
 
-impl<'a, T> Serialize for BinaryFormat<'a, XrplField<'a, T>>
+impl<'a, T> Serialize for XrplBinaryField<'a, T>
     where BinaryFormatWithoutFieldUid<'a, T>: Serialize
 {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-        self.0.serialize_field_uid(writer)?;
-        BinaryFormatWithoutFieldUid::<T>(&self.0.value).serialize(writer)
+        self.serialize_field_uid(writer)?;
+        BinaryFormatWithoutFieldUid::<T>(self.value).serialize(writer)
     }
 }
 
