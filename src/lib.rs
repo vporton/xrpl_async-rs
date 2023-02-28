@@ -6,6 +6,7 @@ pub mod connection;
 pub mod paginate;
 pub mod objects;
 pub mod methods;
+pub mod txs;
 
 #[cfg(test)]
 mod tests {
