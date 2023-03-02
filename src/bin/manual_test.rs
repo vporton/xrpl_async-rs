@@ -3,13 +3,13 @@ use reqwest::Client;
 use tokio_stream::StreamExt;
 use workflow_websocket::client::{Options, WebSocket};
 use xrpl_async::methods::account_channels::{account_channels, ChannelsRequest};
-use xrpl_async::address::{AccountPublicKey, Address};
+use xrpl_async::address::Address;
 use xrpl_async::connection::{Api, JsonRpcApi, XrplError, WebSocketApi};
 use xrpl_async::types::LedgerForRequest;
-use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
-use xrpl_async::methods::submit::sign_and_submit;
-use xrpl_async::objects::amount::Amount;
-use xrpl_async::txs::payment::PaymentTransaction;
+// use xrpl::core::addresscodec::utils::decode_base58;
+// use xrpl_async::methods::submit::sign_and_submit;
+// use xrpl_async::objects::amount::Amount;
+// use xrpl_async::txs::payment::PaymentTransaction;
 
 async fn basic_test<A: Api>(api: &A)
     where A::Error: From<XrplError> + Debug
@@ -41,25 +41,25 @@ async fn main() {
     let api2 = WebSocketApi::new(ws);
     basic_test(&api2).await;
 
-    let our_address = Address::decode("rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh").unwrap();
-    let our_secret = decode_base58("sEdTWjtgXkxfh2p4KrTyDzmKu8aYNnK", &[0x21]).unwrap(); // TODO
-    let tx = PaymentTransaction {
-        amount: Amount {
-            value: 10.0,
-            currency: "XRP".to_string(),
-            issuer: our_address.clone(),
-        },
-        destination: our_address,
-        destination_tag: None,
-        invoice_id: None,
-        send_max: None,
-        deliver_min: None,
-        signature: None,
-        public_key: None,
-    };
-    sign_and_submit(&api,
-                    tx,
-                    AccountPublicKey(our_address),
-                    our_secret.as_slice(),
-                    true).await.unwrap();
+    // let our_address = Address::decode("rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh").unwrap();
+    // let our_secret = decode_base58("sEdTWjtgXkxfh2p4KrTyDzmKu8aYNnK", &[0x21]).unwrap(); // TODO
+    // let tx = PaymentTransaction {
+    //     amount: Amount {
+    //         value: 10.0,
+    //         currency: "XRP".to_string(),
+    //         issuer: our_address.clone(),
+    //     },
+    //     destination: our_address,
+    //     destination_tag: None,
+    //     invoice_id: None,
+    //     send_max: None,
+    //     deliver_min: None,
+    //     signature: None,
+    //     public_key: None,
+    // };
+    // sign_and_submit(&api,
+    //                 tx,
+    //                 AccountPublicKey(our_address),
+    //                 our_secret.as_slice(),
+    //                 true).await.unwrap();
 }
