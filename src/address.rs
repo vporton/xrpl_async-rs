@@ -34,7 +34,7 @@ impl Display for FromXRPDecodingError {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Encoding<
     const LENGTH: usize,
     const TYPE_PREFIX: u8,
@@ -84,7 +84,7 @@ impl<
 ///
 /// `Address` is a separate type, because it has other type code and is prefixed by length
 /// unlike hash of the same length. It also serializes not to hex.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Address(pub Encoding<20, 0x00, 'r'>);
 
 impl Address {
