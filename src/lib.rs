@@ -7,6 +7,7 @@ pub mod paginate;
 pub mod serialize;
 pub mod objects;
 pub mod methods;
+pub mod txs;
 
 #[cfg(test)]
 mod tests {

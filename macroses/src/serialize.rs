@@ -57,10 +57,10 @@ impl<'de> Deserialize<'de> for Definitions {
 
 pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let Struct(s) = &ast.data else {
-        panic!("derive(Serialize) applied not to a struct.")
+        panic!("derive(BinarySerialize) applied not to a struct.")
     };
     let Named(fields) = &s.fields else {
-        panic!("derive(Serialize) works only with named fields.")
+        panic!("derive(BinarySerialize) works only with named fields.")
     };
     let fields_data = (&fields.named).into_iter().map(|field| -> Option<_> {
         for attr in &field.attrs {
@@ -122,8 +122,8 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
 
     let struct_name = &ast.ident;
     quote!(
-        impl Serialize for BinaryFormat<'a, #struct_name> {
-            fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        impl<'a> crate::serialize::Serialize for crate::serialize::BinaryFormat<'a, #struct_name> {
+            fn serialize(&self, writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()> {
                 #body
                 Ok(())
             }
