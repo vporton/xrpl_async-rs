@@ -91,12 +91,16 @@ impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, T>
     }
 }
 
-impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, Option<T>>
-    where BinaryFormatWithoutFieldUid<'a, T>: Serialize
+impl<'a, T> Serialize for XrplBinaryField<'a, Option<T>>
+    where XrplBinaryField<'a, T>: Serialize
 {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-        if let Some(field) = self.0 {
-            BinaryFormatWithoutFieldUid(field).serialize(writer)?;
+        if let Some(field) = self.value {
+            XrplBinaryField {
+                xrpl_type: self.xrpl_type,
+                field_code: self.field_code,
+                value: field,
+            }.serialize(writer)?;
         }
         Ok(())
     }
