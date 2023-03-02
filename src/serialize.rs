@@ -123,16 +123,16 @@ fn write_currency(writer: &mut dyn Write, currency: &str) -> io::Result<()> {
     Ok(())
 }
 
-impl<'a> Serialize for BinaryFormat<'a, Address> {
+impl<'a> Serialize for BinaryFormatWithoutLength<'a, Address> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.0.0)
     }
 }
 
-impl<'a> Serialize for XrplBinaryField<'a, Amount> {
+impl<'a> Serialize for BinaryFormatWithoutFieldUid<'a, Amount> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-        writer.write_f64::<BigEndian>(self.value.value)?;
-        write_currency(writer, &self.value.currency)?;
-        BinaryFormat(&self.value.issuer).serialize(writer)
+        writer.write_f64::<BigEndian>(self.0.value)?;
+        write_currency(writer, &self.0.currency)?;
+        BinaryFormatWithoutLength(&self.0.issuer).serialize(writer)
     }
 }
