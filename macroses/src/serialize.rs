@@ -121,9 +121,9 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
 
     let struct_name = &ast.ident;
     quote!(
-        impl<'a> crate::serialize::Serialize for #struct_name {
-            fn serialize(&self, writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()> {
-                writer.write_all(&[0x53, 0x54, 0x58, 0x00])?; // prefix for unsigned transactions
+        impl TransactionSerializer for #struct_name {
+            fn serialize(&self, prefix: &[u8; 4], writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()> {
+                writer.write_all(prefix)?;
                 #body
                 Ok(())
             }

@@ -136,6 +136,22 @@ impl<
     }
 }
 
+impl<
+    'de,
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char,
+> Deserialize<'de> for Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        // FIXME: Or hex?
+        String::deserialize(deserializer)
+            .and_then(|string| Encoding::decode(&string).map_err(de::Error::custom))
+    }
+}
+
 // TODO: Rename.
 struct AddressVisitor<
     const LENGTH: usize,

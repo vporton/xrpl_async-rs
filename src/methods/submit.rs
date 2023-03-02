@@ -1,12 +1,14 @@
 use std::convert::From;
 use serde::{de, Deserialize, Serialize, Serializer};
-use xrpl_binary_codec::sign::sign_transaction;
-use xrpl_binary_codec::serializer::HASH_PREFIX_TRANSACTION;
+use xrpl_binary_codec::sign::sign;
+use xrpl_binary_codec::serializer::{HASH_PREFIX_TRANSACTION, HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE};
+use crate::address::AccountPublicKey;
 use crate::connection::{Api, XrplError};
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
+use crate::txs::Transaction;
 
-pub use xrpl_types::transaction::Transaction; // FIXME: Remove.
+// pub use xrpl_types::transaction::Transaction; // FIXME: Remove.
 
 #[derive(Debug)]
 pub struct TransactionRequest {
@@ -59,21 +61,35 @@ pub async fn submit<'a, A>(api: &'a A, data: &'a TransactionRequest)
     Ok(api.call((&request).try_into().map_err(de::Error::custom)?).await?.try_into()?)
 }
 
+// TODO: Move?
+// FIXME: special type for secret key
+pub fn sign_transaction<T: Transaction>(tx: T, public_key: AccountPublicKey, secret_key: &[u8]) -> T {
+    use crate::serialize::Serialize;
+    let mut tx = tx;
+    tx.set_public_key(public_key);
+    let mut ser = Vec::new();
+    T::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap(); // TODO: `unwrap`
+    let signature = sign(ser.as_slice(), secret_key);
+    tx.set_signature(signature);
+    tx
+}
+
 /// TODO: Change API not to mess public and secret key.
-pub async fn sign_and_submit<'a, A>(api: &'a A,
-                                    tx: Transaction,
-                                    public_key: &[u8],
-                                    secret_key: &[u8],
-                                    fail_hard: bool)
-                                    -> Result<TypedResponse<TransactionResponse>, A::Error>
+pub async fn sign_and_submit<A, T>(api: &A,
+                                   tx: T,
+                                   public_key: AccountPublicKey,
+                                   secret_key: &[u8],
+                                   fail_hard: bool)
+                                   -> Result<TypedResponse<TransactionResponse>, A::Error>
     where A: Api,
-          A::Error: From<XrplError>
+          A::Error: From<XrplError>,
+          T: Transaction,
 {
     let tx = sign_transaction(tx, public_key, secret_key);
-    let mut ser = xrpl_binary_codec::serializer::Serializer::new();
-    ser.push_transaction(&tx, Some(&HASH_PREFIX_TRANSACTION));
+    let mut ser = Vec::new();
+    T::serialize(&tx, &HASH_PREFIX_TRANSACTION, &mut ser).unwrap(); // TODO: `unwrap`
     let request = TransactionRequest {
-        tx_blob: ser.buf,
+        tx_blob: ser,
         fail_hard,
     };
     submit(api, &request).await

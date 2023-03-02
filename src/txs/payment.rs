@@ -1,6 +1,7 @@
 use crate::objects::amount::Amount;
 use xrpl_async_macroses::BinarySerialize;
-use crate::address::Address;
+use crate::address::{AccountPublicKey, Address};
+use crate::txs::{Transaction, TransactionSerializer};
 use crate::types::Hash;
 
 #[derive(BinarySerialize)]
@@ -22,4 +23,15 @@ struct PaymentTransaction {
     pub deliver_min: Option<Amount>,
     #[binary(id = "TxnSignature")]
     pub signature: Option<Vec<u8>>,
+    #[binary(id = "SigningPubKey")]
+    pub public_key: Option<AccountPublicKey>,
+}
+
+impl Transaction for PaymentTransaction {
+    fn set_signature(&mut self, signature: Vec<u8>) {
+        self.signature = Some(signature);
+    }
+    fn set_public_key(&mut self, public_key: AccountPublicKey) {
+        self.public_key = Some(public_key);
+    }
 }

@@ -33,3 +33,5 @@ tokio = "1.25.0"
 xrpl-rust = "0.1.1" # TODO: Probably, should depend on `xrpl_address_codec` instead.
 tokio-tungstenite = { version = "*", features = ["native-tls"] }
 serde = "1.0.152"
+byteorder = "1.4.3"
+xrpl_binary_codec = "0.9.0"
