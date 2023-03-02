@@ -56,7 +56,7 @@ Transactions are done as follows (yet untested):
     };
     sign_and_submit(&api,
                     tx,
-                    AccountPublicKey(our_address),
-                    our_secret.as_slice(),
+                    public_key,
+                    our_secret,
                     true).await?;
 ```
