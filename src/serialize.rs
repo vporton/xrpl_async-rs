@@ -89,6 +89,12 @@ impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, T>
     }
 }
 
+impl<'a> Serialize for BinaryFormatWithoutLength<'a, u32> {
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        writer.write_u32::<BigEndian>(*self.0)
+    }
+}
+
 // Copied from xrpl_sdk_rust
 fn write_currency(writer: &mut dyn Write, currency: &str) -> io::Result<()> {
     // Non-standard currency codes are 160 bits = 20 bytes in hex (40 chars).
