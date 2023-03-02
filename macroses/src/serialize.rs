@@ -122,6 +122,14 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
 
     let struct_name = &ast.ident;
     quote!(
+        impl Transaction for #struct_name {
+            fn set_signature(&mut self, signature: Vec<u8>) {
+                self.signature = Some(signature);
+            }
+            fn set_public_key(&mut self, public_key: AccountPublicKey) {
+                self.public_key = Some(public_key);
+            }
+        }
         impl TransactionSerializer for #struct_name {
             fn serialize(&self, prefix: &[u8; 4], writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()> {
                 use crate::serialize::Serialize; // TODO: needed?

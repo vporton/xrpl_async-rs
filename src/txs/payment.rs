@@ -26,12 +26,3 @@ struct PaymentTransaction {
     #[binary(id = "SigningPubKey")]
     pub public_key: Option<AccountPublicKey>,
 }
-
-impl Transaction for PaymentTransaction {
-    fn set_signature(&mut self, signature: Vec<u8>) {
-        self.signature = Some(signature);
-    }
-    fn set_public_key(&mut self, public_key: AccountPublicKey) {
-        self.public_key = Some(public_key);
-    }
-}
