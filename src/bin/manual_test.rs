@@ -47,6 +47,8 @@ async fn main() {
     let (public_key, private_key) =
         (hex::decode(public_key).unwrap(), hex::decode(private_key).unwrap());
     let private_key = &private_key[1..33];
+    // let public_key = &public_key[1..33];
+    println!("{} {}", public_key.len(), private_key.len());
     let tx = PaymentTransaction {
         transaction_type: 0, // FIXME: not here
         account: our_address.clone(),
@@ -58,7 +60,11 @@ async fn main() {
         destination: our_address,
         destination_tag: None,
         invoice_id: None,
-        send_max: None,
+        send_max: Some(Amount {
+            value: 10.0,
+            currency: "USD".to_string(),
+            issuer: Address::decode("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn").unwrap(),
+        }),
         deliver_min: None,
         signature: None,
         public_key: None,

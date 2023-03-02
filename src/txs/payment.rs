@@ -36,7 +36,7 @@ pub struct PaymentTransaction {
 #[cfg(test)]
 mod tests {
     use xrpl::core::keypairs::derive_keypair;
-    use xrpl_binary_codec::serializer::HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE;
+    use xrpl_binary_codec::serializer::{HASH_PREFIX_TRANSACTION, HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE};
     use crate::address::{Address, Encoding};
     use crate::objects::amount::Amount;
     use crate::txs::payment::PaymentTransaction;
@@ -80,7 +80,12 @@ mod tests {
         let mut ser = Vec::new();
         PaymentTransaction::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap(); // TODO: `unwrap`
         assert_eq!(ser.as_slice(), hex::decode("5354580012000061D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA969D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA981147CCFE86388B264396710C29F69025DB1DFA4AE4C83147CCFE86388B264396710C29F69025DB1DFA4AE4C").unwrap());
-        // let tx = sign_transaction(tx, Encoding(public_key.as_slice().try_into().unwrap()), private_key);
-        // assert_eq!(tx.signature.unwrap(), hex::decode("9C5462F24618C5E19535121C209ACDE63F248D6FD92D5F31EF43FE457D3A0AEEA033D0B91BDBAD1531BEB399713BA731708A0E2B2C6A520DCC86F5B09D00B60B").unwrap());
+        let mut tx = sign_transaction(tx, Encoding(public_key.as_slice().try_into().unwrap()), private_key);
+        tx.signature = None;
+        let mut ser = Vec::new();
+        PaymentTransaction::serialize(&tx, &HASH_PREFIX_TRANSACTION, &mut ser).unwrap(); // TODO: `unwrap`
+        println!("{}", hex::encode(ser));
+        // Apparently, in JavaScript's serialization SigningPubKey is missing
+        // assert_eq!(ser, hex::decode("5354580012000061D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA969D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA97321EDC5248F3F06990D2E694C83AF55C45206ACD4AABC1151020600ECD6B75A5FF62881147CCFE86388B264396710C29F69025DB1DFA4AE4C83147CCFE86388B264396710C29F69025DB1DFA4AE4C").unwrap());
     }
 }

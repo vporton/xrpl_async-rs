@@ -176,7 +176,12 @@ impl<
     const HUMAN_REPRESENTATION_STARTS_WITH: char,
 > Serialize for BinaryFormatWithoutFieldUid<'a, Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        // FIXME: awful hack!
+        // if self.0.0.len() == 33 {
+        //     writer.write_all(&self.0.0[1..])
+        // } else {
         writer.write_all(&self.0.0)
+        // }
     }
 }
 

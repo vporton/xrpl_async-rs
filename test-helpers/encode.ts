@@ -13,5 +13,9 @@ const tx: Payment = {
     Amount: amount,
     Destination: "rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh",
     SendMax: amount,
+    SigningPubKey: "EDC5248F3F06990D2E694C83AF55C45206ACD4AABC1151020600ECD6B75A5FF628",
 }
 console.log(encodeForSigning(tx))
+const tx2: Payment = { TxnSignature: encodeForSigning(tx), ...tx }
+console.log(encodeForSigning(tx2))
+console.log(tx2)
