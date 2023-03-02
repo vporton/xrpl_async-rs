@@ -55,7 +55,8 @@ pub enum XrplError {
     Message(String),
     #[from(ignore)]
     Connection(String),
-    Json,
+    #[from(ignore)]
+    Json(String),
     HttpStatus(StatusCode),
     Disconnect, // WebSocket disconnect
     XrpStatus(XrplStatusError),
@@ -80,8 +81,8 @@ impl Display for XrplError {
 }
 
 impl From<serde_json::Error> for XrplError {
-    fn from(_value: serde_json::Error) -> Self {
-        Self::Json
+    fn from(value: serde_json::Error) -> Self {
+        Self::Json(value.to_string()) // FIXME: Creates a wrong error.
     }
 }
 
@@ -176,11 +177,18 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                     return Err(WebSocketApiError::Disconnect);
                 },
                 Message::Text(msg) => {
-                    let response: StreamedResponse = StreamedResponse::from_str(&msg)?;
-                    // TODO: Check `unsafe`s again.
-                    unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.result);
-                    if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
-                        return Ok(response);
+                    let response: Result<StreamedResponse, XrplError> = StreamedResponse::from_str(&msg);
+                    match response {
+                        Ok(response) => {
+                            // TODO: Check `unsafe`s again.
+                            unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.result);
+                            if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
+                                return Ok(response);
+                            }
+                        },
+                        Err(err) => {
+                            return Err(XrplError::Json(err.to_string())); // TODO
+                        },
                     }
                 },
                 Message::Binary(_) => {},

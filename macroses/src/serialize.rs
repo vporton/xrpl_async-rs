@@ -115,7 +115,6 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                         } else {
                             field.ident.as_ref().unwrap().to_string()
                         };
-                        println!("{:?}", &(id.clone(), r#type.clone()));
                         let field_info = &DEFINITIONS.fields[&(id, r#type.clone())];
                         let type_code = DEFINITIONS.types[&r#type]; // a little inefficient because of string index
                         return Some((type_code, field_info.nth, &field.ident));

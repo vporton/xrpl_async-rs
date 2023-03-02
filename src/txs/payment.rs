@@ -41,7 +41,6 @@ mod tests {
     use crate::objects::amount::Amount;
     use crate::txs::payment::PaymentTransaction;
     use crate::txs::sign_transaction;
-    use crate::txs::Transaction;
     use crate::txs::TransactionSerializer;
 
     #[test]
