@@ -75,8 +75,8 @@ mod tests {
             signature: None,
             public_key: None,
         };
-        let mut tx = tx;
-        tx.set_public_key(Encoding(*(<&[u8; 33]>::try_from(public_key.as_slice()).unwrap())));
+        // let mut tx = tx;
+        // tx.set_public_key(Encoding(*(<&[u8; 33]>::try_from(public_key.as_slice()).unwrap())));
         let mut ser = Vec::new();
         PaymentTransaction::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap(); // TODO: `unwrap`
         assert_eq!(ser.as_slice(), hex::decode("5354580012000061D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA969D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA981147CCFE86388B264396710C29F69025DB1DFA4AE4C83147CCFE86388B264396710C29F69025DB1DFA4AE4C").unwrap());
