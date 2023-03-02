@@ -29,6 +29,7 @@ struct Definitions {
 
 lazy_static!{
     static ref DEFINITIONS: Definitions = {
+        // TODO: Use Cargo env vars to find the file.
         let file = std::fs::File::open("definitions.json").expect("Can't open definitions.json");
         serde_json::from_reader(file).expect("Can't read file")
     };
