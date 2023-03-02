@@ -113,7 +113,7 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                     type_code: #type_code,
                 },
                 field_code: #nth,
-                value: &self.0.#field_name,
+                value: &self.#field_name,
             }.serialize(writer)?;
         )
     });
@@ -121,7 +121,7 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
 
     let struct_name = &ast.ident;
     quote!(
-        impl<'a> crate::serialize::Serialize for crate::serialize::BinaryFormat<'a, #struct_name> {
+        impl<'a> crate::serialize::Serialize for #struct_name {
             fn serialize(&self, writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()> {
                 writer.write_all(&[0x53, 0x54, 0x58, 0x00])?; // prefix for unsigned transactions
                 #body
