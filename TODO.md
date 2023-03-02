@@ -1,3 +1,4 @@
+- This is bug in my software: https://github.com/XRPLF/xrpl-dev-portal/issues/1755#issuecomment-1451120819
 - X-addresses: https://xrpl.org/basic-data-types.html
 - Generating private keys and transforming to public and addresses.
 - Replace `workflow-websocket` by plain `tokio-tungstenite`?
