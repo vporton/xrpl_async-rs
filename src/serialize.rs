@@ -187,6 +187,6 @@ struct Blob(Vec<u8>);
 
 impl<'a> Serialize for BinaryFormatWithoutLength<'a, Blob> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-        writer.write_all(&self.0.0.as_slice())
+        writer.write_all(self.0.0.as_slice())
     }
 }

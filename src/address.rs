@@ -2,7 +2,7 @@
 use std::array::TryFromSliceError;
 use std::fmt::{Display, Formatter};
 use std::iter::once;
-use ::hex::{FromHexError, ToHex};
+use ::hex::FromHexError;
 use derive_more::From;
 use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
 use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};

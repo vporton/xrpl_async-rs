@@ -64,7 +64,6 @@ pub async fn submit<'a, A>(api: &'a A, data: &'a TransactionRequest)
 // TODO: Move?
 // FIXME: special type for secret key
 pub fn sign_transaction<T: Transaction>(tx: T, public_key: AccountPublicKey, secret_key: &[u8]) -> T {
-    use crate::serialize::Serialize;
     let mut tx = tx;
     tx.set_public_key(public_key);
     let mut ser = Vec::new();
