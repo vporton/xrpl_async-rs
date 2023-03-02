@@ -7,8 +7,6 @@ use crate::request::TypedRequest;
 use crate::response::TypedResponse;
 use crate::txs::{sign_transaction, Transaction};
 
-// pub use xrpl_types::transaction::Transaction; // FIXME: Remove.
-
 #[derive(Debug)]
 pub struct TransactionRequest {
     pub tx_blob: Vec<u8>,
