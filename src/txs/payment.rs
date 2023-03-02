@@ -5,7 +5,7 @@ use crate::txs::{Transaction, TransactionSerializer};
 use crate::types::Hash;
 
 #[derive(BinarySerialize)]
-struct PaymentTransaction {
+pub struct PaymentTransaction {
     #[binary(id = "Amount")]
     pub amount: Amount,
     #[binary(id = "Destination")]
