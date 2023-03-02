@@ -2,7 +2,6 @@ use xrpl_binary_codec::sign::sign;
 use xrpl_binary_codec::serializer::HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE;
 use crate::address::AccountPublicKey;
 
-
 pub mod payment;
 
 pub trait Transaction: TransactionSerializer {
