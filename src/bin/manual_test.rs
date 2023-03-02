@@ -54,6 +54,8 @@ async fn main() {
     println!("LEN: {} {}", public_key.len(), private_key.len());
     let private_key = &private_key[1..33];
     let tx = PaymentTransaction {
+        transaction_type: 0, // FIXME: not here
+        account: our_address.clone(),
         amount: Amount {
             value: 10.0,
             currency: "USD".to_string(),

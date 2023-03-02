@@ -106,6 +106,12 @@ impl<'a, T> Serialize for XrplBinaryField<'a, Option<T>>
     }
 }
 
+impl<'a> Serialize for BinaryFormatWithoutLength<'a, i16> {
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        writer.write_i16::<BigEndian>(*self.0)
+    }
+}
+
 impl<'a> Serialize for BinaryFormatWithoutLength<'a, u32> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_u32::<BigEndian>(*self.0)
