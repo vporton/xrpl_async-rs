@@ -2,6 +2,7 @@ use std::io::{self, Write};
 use byteorder::{BigEndian, WriteBytesExt};
 use crate::address::Address;
 use crate::objects::amount::Amount;
+use crate::types::Hash;
 
 pub struct BinaryFormat<'a, T>(pub &'a T);
 
@@ -89,6 +90,39 @@ impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, T>
     }
 }
 
+impl<'a, T> Serialize for BinaryFormat<'a, Option<T>>
+    where BinaryFormat<'a, T>: Serialize
+{
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        if let Some(field) = self.0 {
+            BinaryFormat(field).serialize(writer)?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, Option<T>>
+    where BinaryFormatWithoutFieldUid<'a, T>: Serialize
+{
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        if let Some(field) = self.0 {
+            BinaryFormatWithoutFieldUid(field).serialize(writer)?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a, T> Serialize for BinaryFormatWithoutLength<'a, Option<T>>
+    where BinaryFormatWithoutLength<'a, T>: Serialize
+{
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        if let Some(field) = self.0 {
+            BinaryFormatWithoutLength(field).serialize(writer)?;
+        }
+        Ok(())
+    }
+}
+
 impl<'a> Serialize for BinaryFormatWithoutLength<'a, u32> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_u32::<BigEndian>(*self.0)
@@ -132,6 +166,15 @@ fn write_currency(writer: &mut dyn Write, currency: &str) -> io::Result<()> {
 impl<'a> Serialize for BinaryFormatWithoutLength<'a, Address> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.0.0.0)
+    }
+}
+
+impl<
+    'a,
+    const LENGTH: usize,
+> Serialize for BinaryFormatWithoutFieldUid<'a, Hash<LENGTH>> {
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        writer.write_all(&self.0.0)
     }
 }
 

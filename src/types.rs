@@ -8,8 +8,9 @@ use serde::de::Visitor;
 use serde::ser::SerializeMap;
 use serde_json::json;
 
+// TODO: `pub`?
 #[derive(Clone, Debug)]
-pub struct Hash<const LENGTH: usize>([u8; LENGTH]);
+pub struct Hash<const LENGTH: usize>(pub [u8; LENGTH]);
 
 impl<const LENGTH: usize> ToString for Hash<LENGTH> {
     fn to_string(&self) -> String {
