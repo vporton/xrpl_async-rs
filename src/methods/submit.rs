@@ -1,12 +1,11 @@
 use std::convert::From;
 use serde::{de, Deserialize, Serialize, Serializer};
-use xrpl_binary_codec::sign::sign;
-use xrpl_binary_codec::serializer::{HASH_PREFIX_TRANSACTION, HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE};
+use xrpl_binary_codec::serializer::HASH_PREFIX_TRANSACTION;
 use crate::address::AccountPublicKey;
 use crate::connection::{Api, XrplError};
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
-use crate::txs::Transaction;
+use crate::txs::{sign_transaction, Transaction};
 
 // pub use xrpl_types::transaction::Transaction; // FIXME: Remove.
 
@@ -59,18 +58,6 @@ pub async fn submit<'a, A>(api: &'a A, data: &'a TransactionRequest)
         data,
     };
     Ok(api.call((&request).try_into().map_err(de::Error::custom)?).await?.try_into()?)
-}
-
-// TODO: Move?
-// FIXME: special type for secret key
-pub fn sign_transaction<T: Transaction>(tx: T, public_key: AccountPublicKey, secret_key: &[u8]) -> T {
-    let mut tx = tx;
-    tx.set_public_key(public_key);
-    let mut ser = Vec::new();
-    T::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap(); // TODO: `unwrap`
-    let signature = sign(ser.as_slice(), secret_key);
-    tx.set_signature(signature);
-    tx
 }
 
 /// TODO: Change API not to mess public and secret key.
