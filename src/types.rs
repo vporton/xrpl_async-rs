@@ -7,6 +7,7 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde::de::Visitor;
 use serde::ser::SerializeMap;
 use serde_json::json;
+use sha2::{Digest, Sha512_256};
 
 // TODO: `pub`?
 #[derive(Clone, Debug)]
@@ -61,6 +62,16 @@ impl<'de, const LENGTH: usize> Deserialize<'de> for Hash<LENGTH> {
     {
         deserializer.deserialize_str(HashVisitor)
     }
+}
+
+pub struct Seed(pub [u8; 16]);
+
+pub struct PrivateKey(pub [u8; 32]);
+
+pub fn seed_to_private_key(seed: &Seed) -> PrivateKey {
+    let mut hasher = Sha512_256::new();
+    hasher.update(seed.0);
+    PrivateKey(hasher.finalize()[.. 32].try_into().unwrap())
 }
 
 pub fn encode_xrp_amount(amount: u64) -> String {

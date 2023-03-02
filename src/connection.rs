@@ -16,12 +16,12 @@ use crate::response::{Response, StreamedResponse};
 
 /// Status not `"success"`
 #[derive(Debug)]
-pub struct XrplStatusError;
+pub struct XrplStatusError(pub Option<String>);
 
 impl XrplStatusError {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(err: Option<String>) -> Self {
+        Self(err)
     }
 }
 

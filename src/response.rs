@@ -52,7 +52,8 @@ impl Response {
         }
         let data: Response2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
-            return Err(XrplStatusError::new().into());
+            // FIXME: `unwrap` is very wrong:
+            return Err(XrplStatusError::new(data.result.get("error").map(|v| v.as_str().unwrap().to_string())).into());
         }
         // TODO: Implement without `clone`.
         Ok(Self {
@@ -96,7 +97,8 @@ impl StreamedResponse {
         }
         let data: StreamedResponse2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.status != "success" {
-            return Err(XrplStatusError::new().into());
+            // FIXME: `unwrap` is very wrong:
+            return Err(XrplStatusError::new(data.result.get("error").map(|v| v.as_str().unwrap().to_string())).into());
         }
         Ok(StreamedResponse {
             result: Response {
