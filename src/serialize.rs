@@ -4,6 +4,7 @@ use crate::address::Address;
 use crate::objects::amount::Amount;
 use crate::types::Hash;
 
+// in conflict with XrplBinaryField:
 // pub struct BinaryFormat<'a, T>(pub &'a T);
 
 /// TODO: Remove `pub`?
@@ -90,17 +91,6 @@ impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, T>
     }
 }
 
-// impl<'a, T> Serialize for BinaryFormat<'a, Option<T>>
-//     where BinaryFormat<'a, T>: Serialize
-// {
-//     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-//         if let Some(field) = self.0 {
-//             BinaryFormat(field).serialize(writer)?;
-//         }
-//         Ok(())
-//     }
-// }
-
 impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, Option<T>>
     where BinaryFormatWithoutFieldUid<'a, T>: Serialize
 {
@@ -111,17 +101,6 @@ impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, Option<T>>
         Ok(())
     }
 }
-
-// impl<'a, T> Serialize for BinaryFormatWithoutLength<'a, Option<T>>
-//     where BinaryFormatWithoutLength<'a, T>: Serialize
-// {
-//     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-//         if let Some(field) = self.0 {
-//             BinaryFormatWithoutLength(field).serialize(writer)?;
-//         }
-//         Ok(())
-//     }
-// }
 
 impl<'a> Serialize for BinaryFormatWithoutLength<'a, u32> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
