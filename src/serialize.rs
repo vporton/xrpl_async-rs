@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 use byteorder::{BigEndian, WriteBytesExt};
-use crate::address::Address;
+use crate::address::{Address, Encoding};
 use crate::objects::amount::Amount;
 use crate::types::Hash;
 
@@ -154,6 +154,24 @@ impl<
 > Serialize for BinaryFormatWithoutFieldUid<'a, Hash<LENGTH>> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.0.0)
+    }
+}
+
+impl<
+    'a,
+    const LENGTH: usize,
+    const TYPE_PREFIX: u8,
+    const HUMAN_REPRESENTATION_STARTS_WITH: char,
+> Serialize for BinaryFormatWithoutFieldUid<'a, Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>> {
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        // FIXME: with or without length?
+        writer.write_all(&self.0.0)
+    }
+}
+
+impl<'a> Serialize for BinaryFormatWithoutLength<'a, Vec<u8>> {
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        writer.write_all(self.0.as_slice())
     }
 }
 

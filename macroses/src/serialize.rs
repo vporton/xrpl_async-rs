@@ -123,6 +123,7 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     quote!(
         impl TransactionSerializer for #struct_name {
             fn serialize(&self, prefix: &[u8; 4], writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()> {
+                use crate::serialize::Serialize; // TODO: needed?
                 writer.write_all(prefix)?;
                 #body
                 Ok(())
