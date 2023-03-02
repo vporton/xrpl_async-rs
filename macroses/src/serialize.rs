@@ -109,12 +109,12 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let body = fields_data.map(|field| {
         let (type_code, nth, field_name) = field;
         quote!(
-            XrplField {
-                xrpl_type: &XrplType {
+            crate::serialize::XrplBinaryField {
+                xrpl_type: &crate::serialize::XrplType {
                     type_code: #type_code,
                 },
                 field_code: #nth,
-                value: &self.#field_name,
+                value: &self.0.#field_name,
             }.serialize(writer)?;
         )
     });

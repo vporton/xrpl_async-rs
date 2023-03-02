@@ -16,17 +16,17 @@ pub trait Serialize {
 }
 
 pub struct XrplType {
-    pub type_code: u16,
+    pub type_code: i16,
 }
 
 pub struct XrplBinaryField<'a, T> {
     pub xrpl_type: &'a XrplType,
-    pub field_code: u16,
+    pub field_code: i16,
     pub value: &'a T,
 }
 
 impl<'a, T> XrplBinaryField<'a, T> {
-    pub fn type_code(&self) -> u16 {
+    pub fn type_code(&self) -> i16 {
         self.xrpl_type.type_code
     }
 }
