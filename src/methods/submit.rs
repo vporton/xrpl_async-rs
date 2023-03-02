@@ -17,11 +17,11 @@ impl Serialize for TransactionRequest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         #[derive(Debug, Serialize)]
         pub struct TransactionRequest2<'a> {
-            pub tx_blob: &'a Vec<u8>,
+            pub tx_blob: &'a String,
             pub fail_hard: Option<bool>,
         }
         TransactionRequest2 {
-            tx_blob: &self.tx_blob,
+            tx_blob: &hex::encode(&self.tx_blob),
             fail_hard: if self.fail_hard { Some(true) } else { None },
         }.serialize(serializer)
     }
