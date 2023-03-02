@@ -84,14 +84,17 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                         } else {
                             None
                         }).collect();
-                        if kvs.len() != 1 {
-                            panic!("Must be exactly one binary(id)");
+                        if kvs.len() > 1 {
+                            panic!("Must be no more than one binary(id)");
                         }
-                        let pair = kvs.first().unwrap();
-                        let Lit::Str(lit) = &pair.lit else {
-                            panic!("binary(id) must be a string.")
+                        let id = if let Some(pair) = kvs.first() {
+                            let Lit::Str(lit) = &pair.lit else {
+                                panic!("binary(id) must be a string.")
+                            };
+                            lit.value()
+                        } else {
+                            field.ident.as_ref().unwrap().to_string()
                         };
-                        let id = lit.value();
                         let field_info = &DEFINITIONS.fields[&id];
                         let type_code = DEFINITIONS.types[&field_info.r#type]; // a little inefficient because of string index
                         return Some((type_code, field_info.nth, &field.ident));
