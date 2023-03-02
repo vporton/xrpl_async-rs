@@ -3,42 +3,33 @@ use xrpl_async_macroses::BinarySerialize;
 // use crate::address::{AccountPublicKey, Address};
 use crate::txs::{Transaction, TransactionSerializer};
 use crate::types::Hash;
-use std::fmt::Debug;
-use reqwest::Client;
-use tokio_stream::StreamExt;
-use workflow_websocket::client::{Options, WebSocket};
-use xrpl::core::keypairs::derive_keypair;
-use crate::methods::account_channels::{account_channels, ChannelsRequest};
-use crate::address::{AccountPublicKey, Address, Encoding};
-use crate::connection::{Api, JsonRpcApi, XrplError, WebSocketApi};
-use crate::methods::submit::sign_and_submit;
-use crate::types::LedgerForRequest;
+use crate::address::{AccountPublicKey, Address};
 
 // FIXME: We have not all required fields from https://xrpl.org/transaction-common-fields.html
 #[derive(BinarySerialize)]
 pub struct PaymentTransaction {
-    #[binary(id = "TransactionType")]
+    #[binary(id = "TransactionType", rtype = "UInt16")]
     pub transaction_type: i16,
-    #[binary(id = "Account")]
+    #[binary(id = "Account", rtype = "AccountID")]
     pub account: Address,
-    #[binary(id = "Amount")]
+    #[binary(id = "Amount", rtype = "Amount")]
     pub amount: Amount,
-    #[binary(id = "Destination")]
+    #[binary(id = "Destination", rtype = "AccountID")]
     pub destination: Address,
-    #[binary(id = "DestinationTag")]
+    #[binary(id = "DestinationTag", rtype = "UInt32")]
     pub destination_tag: Option<u32>,
-    #[binary(id = "InvoiceID")]
+    #[binary(id = "InvoiceID", rtype = "Hash256")]
     pub invoice_id: Option<Hash<32>>,
     // TODO: Add `Paths`
     // #[binary(id = "Paths")]
     // pub paths: Option<Hash<32>>,
-    #[binary(id = "SendMax")]
+    #[binary(id = "SendMax", rtype = "Amount")]
     pub send_max: Option<Amount>,
-    #[binary(id = "DeliverMin")]
+    #[binary(id = "DeliverMin", rtype = "Amount")]
     pub deliver_min: Option<Amount>,
-    #[binary(id = "TxnSignature")]
+    #[binary(id = "TxnSignature", rtype = "Blob")]
     pub signature: Option<Vec<u8>>,
-    #[binary(id = "SigningPubKey")]
+    #[binary(id = "SigningPubKey", rtype = "Blob")]
     pub public_key: Option<AccountPublicKey>,
 }
 

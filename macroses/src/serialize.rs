@@ -24,7 +24,7 @@ struct Definitions {
     pub types: HashMap<String, i16>,
     #[allow(dead_code)]
     pub ledger_entry_types: HashMap<String, i16>,
-    pub fields: HashMap<String, FieldInfo>,
+    pub fields: HashMap<(String, String), FieldInfo>, // (Name, Type) -> FieldInfo
 }
 
 lazy_static!{
@@ -50,7 +50,7 @@ impl<'de> Deserialize<'de> for Definitions {
         Ok(Self {
             types: value.types,
             ledger_entry_types: value.ledger_entry_types,
-            fields: value.fields.into_iter().collect(),
+            fields: value.fields.into_iter().map(|(k, v)| ((k, v.r#type.clone()), v)).into_iter().collect(),
         })
     }
 }
@@ -87,7 +87,27 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                         if kvs.len() > 1 {
                             panic!("Must be no more than one binary(id)");
                         }
+                        let kvs2: Vec<_> = meta.iter().filter_map(|v| if let NestedMeta::Meta(Meta::NameValue(kv)) = v {
+                            if kv.path.is_ident("rtype") {
+                                Some(kv)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        }).collect();
+                        if kvs2.len() != 1 {
+                            panic!("Must be exactly one binary(type)");
+                        }
                         let id = if let Some(pair) = kvs.first() {
+                            let Lit::Str(lit) = &pair.lit else {
+                                panic!("binary(rtype) must be a string.")
+                            };
+                            lit.value()
+                        } else {
+                            field.ident.as_ref().unwrap().to_string()
+                        };
+                        let r#type = if let Some(pair) = kvs2.first() {
                             let Lit::Str(lit) = &pair.lit else {
                                 panic!("binary(id) must be a string.")
                             };
@@ -95,8 +115,9 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                         } else {
                             field.ident.as_ref().unwrap().to_string()
                         };
-                        let field_info = &DEFINITIONS.fields[&id];
-                        let type_code = DEFINITIONS.types[&field_info.r#type]; // a little inefficient because of string index
+                        println!("{:?}", &(id.clone(), r#type.clone()));
+                        let field_info = &DEFINITIONS.fields[&(id, r#type.clone())];
+                        let type_code = DEFINITIONS.types[&r#type]; // a little inefficient because of string index
                         return Some((type_code, field_info.nth, &field.ident));
                     }
                 }

@@ -47,6 +47,7 @@ impl<'a, T> XrplBinaryField<'a, T> {
         }
     }
     pub fn serialize_field_uid(&self, writer: &mut dyn Write) -> io::Result<()> {
+        println!("Type {} ({:?}) / {}", self.type_code(), &self.field_uid(), self.field_code); // FIXME: Remove.
         writer.write_all(&self.field_uid())
     }
 }

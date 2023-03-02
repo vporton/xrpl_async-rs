@@ -1,36 +1,31 @@
-use std::fmt::Debug;
 use reqwest::Client;
-use tokio_stream::StreamExt;
-use workflow_websocket::client::{Options, WebSocket};
 use xrpl::core::keypairs::derive_keypair;
-use xrpl_async::methods::account_channels::{account_channels, ChannelsRequest};
-use xrpl_async::address::{AccountPublicKey, Address, Encoding};
-use xrpl_async::connection::{Api, JsonRpcApi, XrplError, WebSocketApi};
+use xrpl_async::address::{Address, Encoding};
+use xrpl_async::connection::JsonRpcApi;
 use xrpl_async::methods::submit::sign_and_submit;
 use xrpl_async::objects::amount::Amount;
 use xrpl_async::txs::payment::PaymentTransaction;
-use xrpl_async::types::LedgerForRequest;
 // use xrpl::core::addresscodec::utils::decode_base58;
 // use xrpl_async::methods::submit::sign_and_submit;
 // use xrpl_async::objects::amount::Amount;
 // use xrpl_async::txs::payment::PaymentTransaction;
 
-async fn basic_test<A: Api>(api: &A)
-    where A::Error: From<XrplError> + Debug
-{
-    let request = ChannelsRequest {
-        account: Address::decode("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn").unwrap(),
-        destination_account: None,
-        ledger: LedgerForRequest::Validated,
-        limit: None,
-    };
-    let (response, mut paginator) = account_channels(api, &request).await.unwrap();
-    println!("{:?}", response);
-    while let Some(item) = paginator.next().await {
-        let item = item.unwrap();
-        println!("- {:?}", item);
-    }
-}
+// async fn basic_test<A: Api>(api: &A)
+//     where A::Error: From<XrplError> + Debug
+// {
+//     let request = ChannelsRequest {
+//         account: Address::decode("rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn").unwrap(),
+//         destination_account: None,
+//         ledger: LedgerForRequest::Validated,
+//         limit: None,
+//     };
+//     let (response, mut paginator) = account_channels(api, &request).await.unwrap();
+//     println!("{:?}", response);
+//     while let Some(item) = paginator.next().await {
+//         let item = item.unwrap();
+//         println!("- {:?}", item);
+//     }
+// }
 
 #[tokio::main]
 async fn main() {
@@ -51,7 +46,6 @@ async fn main() {
     let (public_key, private_key) = derive_keypair(our_seed, false).unwrap(); // TODO: ineffective!
     let (public_key, private_key) =
         (hex::decode(public_key).unwrap(), hex::decode(private_key).unwrap());
-    println!("LEN: {} {}", public_key.len(), private_key.len());
     let private_key = &private_key[1..33];
     let tx = PaymentTransaction {
         transaction_type: 0, // FIXME: not here
