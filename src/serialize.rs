@@ -1,5 +1,7 @@
 use std::io::{self, Write};
-use byteorder::WriteBytesExt;
+use byteorder::{BigEndian, WriteBytesExt};
+use crate::address::Address;
+use crate::objects::amount::Amount;
 
 pub struct BinaryFormat<'a, T>(pub &'a T);
 
@@ -11,6 +13,7 @@ pub struct BinaryFormatWithoutFieldUid<'a, T>(pub &'a T);
 /// TODO: Remove `pub`?
 pub struct BinaryFormatWithoutLength<'a, T>(pub &'a T);
 
+// TODO: Make it asynchronous.
 pub trait Serialize {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()>;
 }
@@ -83,5 +86,53 @@ impl<'a, T> Serialize for BinaryFormatWithoutFieldUid<'a, T>
         BinaryFormatWithoutLength::<T>(self.0).serialize(&mut buf)?;
         serialize_length(writer, buf.len())?;
         writer.write_all(&buf)
+    }
+}
+
+// Copied from xrpl_sdk_rust
+fn write_currency(writer: &mut dyn Write, currency: &str) -> io::Result<()> {
+    // Non-standard currency codes are 160 bits = 20 bytes in hex (40 chars).
+
+    if currency.len() == 40 {
+        // Non-standard currency code.
+        let currency_bytes = hex::decode(currency).unwrap();
+        // if currency_bytes[0] == 0x00 {
+        writer.write_all(&currency_bytes)?;
+        return Ok(());
+        // }
+    }
+
+    // Standard currency code.
+
+    // 8 bits
+    writer.write_u8(0x00)?;
+
+    // 88 bits
+    for _ in 0..11 {
+        writer.write_u8(0x00)?;
+    }
+
+    // 24 bits
+    writer.write_all(currency.as_bytes())?;
+
+    // 40 bits
+    for _ in 0..5 {
+        writer.write_u8(0x00)?;
+    }
+
+    Ok(())
+}
+
+impl<'a> Serialize for BinaryFormat<'a, Address> {
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        writer.write_all(&self.0.0)
+    }
+}
+
+impl<'a> Serialize for XrplBinaryField<'a, Amount> {
+    fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
+        writer.write_f64::<BigEndian>(self.value.value)?;
+        write_currency(writer, &self.value.currency)?;
+        BinaryFormat(&self.value.issuer).serialize(writer)
     }
 }

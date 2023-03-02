@@ -1,4 +1,4 @@
-use xrpl::core::types::Amount;
+use crate::objects::amount::Amount;
 use xrpl_async_macroses::BinarySerialize;
 
 #[derive(BinarySerialize)]

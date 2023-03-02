@@ -5,7 +5,6 @@ use itertools::Itertools;
 use syn::{Data::Struct, Fields::Named, AttrStyle, Lit, Meta, MetaList, NestedMeta};
 use serde::{Deserialize, Deserializer};
 use lazy_static::lazy_static;
-use syn::__private::TokenStream2;
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
@@ -118,12 +117,13 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
             }.serialize(writer)?;
         )
     });
-    let body = TokenStream2::from_iter(body);
+    let body = proc_macro2::TokenStream::from_iter(body);
 
     let struct_name = &ast.ident;
     quote!(
         impl<'a> crate::serialize::Serialize for crate::serialize::BinaryFormat<'a, #struct_name> {
             fn serialize(&self, writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()> {
+                writer.write_all(&[0x53, 0x54, 0x58, 0x00])?; // prefix for unsigned transactions
                 #body
                 Ok(())
             }

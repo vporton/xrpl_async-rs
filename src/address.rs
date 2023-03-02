@@ -38,7 +38,7 @@ pub struct Encoding<
     const LENGTH: usize,
     const TYPE_PREFIX: u8,
     const HUMAN_REPRESENTATION_STARTS_WITH: char
->([u8; LENGTH]);
+>(pub [u8; LENGTH]);
 
 // TODO: Unit test that `human_representation_starts_with` and `type_prefix` agree.
 impl<

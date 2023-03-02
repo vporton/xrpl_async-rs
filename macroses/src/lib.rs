@@ -18,6 +18,7 @@ use crate::serialize::impl_serialize;
 ///     // ...
 /// }
 /// ```
+/// WARNING: It serializes as unsigned transaction.
 #[proc_macro_derive(BinarySerialize, attributes(binary))]
 pub fn binary_serialize(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
