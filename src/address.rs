@@ -2,7 +2,7 @@
 use std::array::TryFromSliceError;
 use std::fmt::{Display, Formatter};
 use std::iter::once;
-use ::hex::FromHexError;
+use ::hex::{FromHexError, ToHex};
 use derive_more::From;
 use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
 use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
@@ -160,20 +160,6 @@ impl<
             E: de::Error,
     {
         Self::Value::decode(value).map_err(de::Error::custom)
-    }
-}
-
-impl<
-    'de,
-    const LENGTH: usize,
-    const TYPE_PREFIX: u8,
-    const HUMAN_REPRESENTATION_STARTS_WITH: char,
-> Deserialize<'de> for Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(AddressVisitor)
     }
 }
 

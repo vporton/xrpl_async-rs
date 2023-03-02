@@ -20,4 +20,6 @@ struct PaymentTransaction {
     pub send_max: Option<Amount>,
     #[binary(id = "DeliverMin")]
     pub deliver_min: Option<Amount>,
+    #[binary(id = "TxnSignature")]
+    pub signature: Option<Vec<u8>>,
 }

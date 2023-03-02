@@ -1,5 +1,9 @@
+use std::fmt::Formatter;
 use std::io::{self, Write};
 use byteorder::{BigEndian, WriteBytesExt};
+use hex::ToHex;
+use serde::de::Visitor;
+use serde::{de, Deserialize, Deserializer, Serializer};
 use crate::address::Address;
 use crate::objects::amount::Amount;
 use crate::types::Hash;
@@ -164,3 +168,41 @@ impl<'a> Serialize for BinaryFormatWithoutFieldUid<'a, Amount> {
         BinaryFormatWithoutLength(&self.0.issuer).serialize(writer)
     }
 }
+
+// // TODO: move?
+// struct Blob(pub Vec<u8>);
+//
+// impl Serialize for Blob {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//         where S: Serializer,
+//     {
+//         serializer.serialize_str(&self.0.encode_hex_upper())
+//     }
+// }
+//
+// struct BlobVisitor;
+//
+// impl<'de> Visitor<'de> for Blob {
+//     type Value = Blob;
+//
+//     fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+//         formatter.write_str("an address")
+//     }
+//
+//     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+//         where
+//             E: de::Error,
+//     {
+//         Ok(Blob(Self::Value::decode_hex(value).map_err(de::Error::custom)?))
+//     }
+// }
+//
+// TODO:
+// impl<'de> Deserialize<'de> for Vec<u8> {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//         where
+//             D: Deserializer<'de>,
+//     {
+//         deserializer.deserialize_str(VectorVisitor)
+//     }
+// }
