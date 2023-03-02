@@ -1,3 +1,4 @@
+// TODO: Rename this file.
 use std::array::TryFromSliceError;
 use std::fmt::{Display, Formatter};
 use std::iter::once;
@@ -59,6 +60,13 @@ impl<
     pub fn bytes_with_prefix(&self) -> Vec<u8> {
         once(TYPE_PREFIX).chain(self.bytes_without_prefix()).collect()
     }
+    // TODO: Isn't it always hex? and therefore to remove `_hex` suffix?
+    pub fn encode_hex(&self) -> String {
+        ::hex::encode_upper(self.0)
+    }
+    pub fn decode_hex(s: &str) -> Result<Self, FromXRPDecodingError> {
+        Ok(Self(::hex::decode(s)?.as_slice().try_into()?))
+    }
     pub fn encode(&self) -> String {
         // (&self.bytes_without_prefix() as &[u8]).to_base58check(Self::TYPE_PREFIX)
         encode_base58(&self.bytes_without_prefix() as &[u8], &[Self::TYPE_PREFIX], Some(LENGTH)).unwrap()
@@ -68,18 +76,28 @@ impl<
         // if prefix != Self::TYPE_PREFIX {
         //     return Err(WrongPrefixError::new().into());
         // }
-        Ok(Self::from_bytes_without_prefix(bytes.as_slice().try_into()?))
-    }
-    pub fn encode_hex(&self) -> String {
-        ::hex::encode_upper(self.0)
-    }
-    pub fn decode_hex(s: &str) -> Result<Self, FromXRPDecodingError> {
-        Ok(Self(::hex::decode(s)?.as_slice().try_into()?))
+        Ok(Encoding::from_bytes_without_prefix(bytes.as_slice().try_into()?))
     }
 }
 
 /// Account address
-pub type Address = Encoding<20, 0x00, 'r'>;
+///
+/// `Address` is a separate type, because it has other type code and is prefixed by length
+/// unlike hash of the same length. It also serializes not to hex.
+#[derive(Clone, Debug)]
+pub struct Address(pub Encoding<20, 0x00, 'r'>);
+
+impl Address {
+    pub const TYPE_PREFIX: u8 = 0x00;
+    pub const LENGTH: usize = 20;
+    pub const HUMAN_REPRESENTATION_STARTS_WITH: char = 'r';
+    pub fn encode(&self) -> String {
+        self.0.encode()
+    }
+    pub fn decode(s: &str) -> Result<Self, FromXRPDecodingError> {
+        Ok(Self(Encoding::decode(s)?))
+    }
+}
 
 /// Account public key
 pub type AccountPublicKey = Encoding<33, 0x23, 'a'>;
@@ -90,14 +108,29 @@ pub type SeedValue = Encoding<16, 0x21, 's'>;
 /// Validation public key or node public key
 pub type ValidationOrNodePublicKey = Encoding<33, 0x1C, 'n'>;
 
+impl Serialize for Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Address {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>,
+    {
+        Ok(Self(Encoding::<20, 0x00, 'r'>::deserialize(deserializer)?))
+    }
+}
+
 impl<
     const LENGTH: usize,
     const TYPE_PREFIX: u8,
     const HUMAN_REPRESENTATION_STARTS_WITH: char,
 > Serialize for Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+        where S: Serializer,
     {
         serializer.serialize_str(&self.encode())
     }

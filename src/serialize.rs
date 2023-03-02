@@ -131,7 +131,7 @@ fn write_currency(writer: &mut dyn Write, currency: &str) -> io::Result<()> {
 
 impl<'a> Serialize for BinaryFormatWithoutLength<'a, Address> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-        writer.write_all(&self.0.0)
+        writer.write_all(&self.0.0.0)
     }
 }
 
