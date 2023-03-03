@@ -1,6 +1,5 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
-use std::fmt;
 use std::fmt::Display;
 use std::str::FromStr;
 use fragile::Fragile;
@@ -9,19 +8,22 @@ use async_trait::async_trait;
 use reqwest::{Client, StatusCode};
 use serde::de;
 use workflow_websocket::client::{Message, WebSocket};
-use derive_more::{From, Display, Error};
+use derive_more::{From, Display};
 use crate::connection::XrplError::Connection;
 use crate::request::{Request, StreamedRequest};
 use crate::response::{Response, StreamedResponse};
 
 /// Status not `"success"`
-#[derive(Debug)]
-pub struct XrplStatusError(pub String);
+#[derive(Debug, Display)]
+#[display(fmt = "Server error code: {}", "self.code")]
+pub struct XrplStatusError {
+    pub code: String,
+}
 
 impl XrplStatusError {
     #[allow(clippy::new_without_default)]
-    pub fn new(err: String) -> Self {
-        Self(err)
+    pub fn new(code: String) -> Self {
+        Self { code }
     }
 }
 
@@ -65,9 +67,8 @@ pub enum XrplError {
     #[display(fmt = "HTTP status: {}", _0)]
     HttpStatus(StatusCode),
     #[display(fmt = "WebSocket disconnected")]
-    Disconnect, // WebSocket disconnect
-    #[display(fmt = "Server error message")]
-    XrpStatus(XrplStatusError),
+    Disconnect,
+    XrplStatus(XrplStatusError),
 }
 
 impl de::Error for XrplError {

@@ -4,7 +4,6 @@
   (however, that is more low-level).
 - Remove dependency to `xrpl-rust`.
 - Doc comments.
-- Better error values.
 - Debug print `Hash` and `Account` in hex.
 - Asynchronous interface for watching when a ledger/transaction becomes
   included into the ledger.
