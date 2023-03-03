@@ -53,10 +53,11 @@ impl Response {
         let data: Response2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
             // TODO: duplicate code
-            return Err(XrplStatusError::new(Some(
-                data.result.get("error")
-                    .ok_or_else(|| XrplError::Json("no `error` field".to_owned()))?.to_string())
-            ).into());
+            return if let Some(Value::String(err)) = data.result.get("error") {
+                Err(XrplStatusError::new(Some(err.clone())).into())
+            } else {
+                Err(XrplStatusError::new(None).into())
+            };
         }
         // TODO: Implement without `clone`.
         Ok(Self {
@@ -103,7 +104,7 @@ impl StreamedResponse {
             Ok(data) => data,
             // TODO: Rewrite this:
             Err(_) => return if let Some(Value::String(s)) = s.get("error".to_owned()) {
-                Err(s.clone().into())
+                Err(XrplStatusError::new(Some(s.clone())).into()) // TODO: without `clone`
             } else {
                 Err("error is not string".to_string().into())
             }

@@ -16,7 +16,7 @@ use crate::response::{Response, StreamedResponse};
 
 /// Status not `"success"`
 #[derive(Debug)]
-pub struct XrplStatusError(pub Option<String>);
+pub struct XrplStatusError(pub Option<String>); // FIXME: Need `Option`?
 
 impl XrplStatusError {
     #[allow(clippy::new_without_default)]
@@ -82,7 +82,7 @@ impl Display for XrplError {
 
 impl From<serde_json::Error> for XrplError {
     fn from(value: serde_json::Error) -> Self {
-        Self::Json(value.to_string()) // FIXME: Creates a wrong error.
+        Self::Json(value.to_string())
     }
 }
 
@@ -187,7 +187,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                             }
                         },
                         Err(err) => {
-                            return Err(XrplError::Json(err.to_string())); // TODO
+                            return Err(err); // TODO
                         },
                     }
                 },
