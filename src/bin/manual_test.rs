@@ -85,14 +85,14 @@ async fn main() {
                                    tx.clone(),
                                    Encoding(public_key.as_slice().try_into().unwrap()),
                                    &private_key, //.as_slice(),
-                                   true).await;//.unwrap();
-    println!("TX RESPONSE: {:?}", response);
+                                   true).await.unwrap_err();
+    println!("TX RESPONSE: {}", response);
 
     println!("** WebSocketApi transaction **");
     let response = sign_and_submit(&api2,
                                    tx,
                                    Encoding(public_key.as_slice().try_into().unwrap()),
                                    &private_key, //.as_slice(),
-                                   true).await;//.unwrap();
-    println!("TX RESPONSE: {:?}", response);
+                                   true).await.unwrap_err();
+    println!("TX RESPONSE: {}", response);
 }

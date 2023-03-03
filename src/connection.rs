@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use reqwest::{Client, StatusCode};
 use serde::de;
 use workflow_websocket::client::{Message, WebSocket};
-use derive_more::From;
+use derive_more::{From, Display, Error};
 use crate::connection::XrplError::Connection;
 use crate::request::{Request, StreamedRequest};
 use crate::response::{Response, StreamedResponse};
@@ -50,16 +50,23 @@ impl JsonRpcApi {
     }
 }
 
-#[derive(Debug, From)]
+#[derive(Debug, Display, From)]
 pub enum XrplError {
+    #[display(fmt = "{}", _0)]
     Message(String),
     #[from(ignore)]
+    #[display(fmt = "Network: {}", _0)]
     Connection(String),
+    #[display(fmt = "Server: not JSON: {}", _0)]
     #[from(ignore)]
     JsonParse(String),
+    #[display(fmt = "Server: wrong JSON")]
     WrongFormat,
+    #[display(fmt = "HTTP status: {}", _0)]
     HttpStatus(StatusCode),
+    #[display(fmt = "WebSocket disconnected")]
     Disconnect, // WebSocket disconnect
+    #[display(fmt = "Server error message")]
     XrpStatus(XrplStatusError),
 }
 
@@ -71,15 +78,15 @@ impl de::Error for XrplError {
 
 impl std::error::Error for XrplError {}
 
-impl Display for XrplError {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            XrplError::Message(msg) => formatter.write_str(msg),
-            other => formatter.write_str(&format!("{:?}", other)), // TODO
-            /* and so forth */
-        }
-    }
-}
+// impl Display for XrplError {
+//     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+//         match self {
+//             XrplError::Message(msg) => formatter.write_str(msg),
+//             other => formatter.write_str(&format!("{:?}", other)), // TODO
+//             /* and so forth */
+//         }
+//     }
+// }
 
 impl From<serde_json::Error> for XrplError {
     fn from(value: serde_json::Error) -> Self {
