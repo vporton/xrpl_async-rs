@@ -13,6 +13,8 @@ This is fully asynchronous XRPL client written in idiomatic Rust:
 By fully asynchronous, I mean:
 - Single async call not only for JsonRpcApi to receive the result of the call, but also single async call to WebSocketApi to receive the result of the call.
 - Multipage answers (with "marker") are single asynchronous stream.
+- (not yet implemented) asynchronous watching blockchain events (such as
+  a transaction going approved by the network).
 
 Example:
 ```rust
