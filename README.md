@@ -2,7 +2,13 @@
 
 _(This project is not ready yet.)_
 
-This is fully asynchronous XRPL client written in idiomatic Rust.
+This is fully asynchronous XRPL client written in idiomatic Rust:
+
+```rust
+    let http_client = Client::new();
+    let api = JsonRpcApi::new(http_client, "http://s1.ripple.com:51234/".to_owned());
+    let response = account_info(api, &request).await.unwrap();
+```
 
 By fully asynchronous, I mean:
 - Single async call not only for JsonRpcApi to receive the result of the call, but also single async call to WebSocketApi to receive the result of the call.
