@@ -13,7 +13,6 @@ pub trait TransactionSerializer {
     fn serialize(&self, prefix: &[u8; 4], writer: &mut dyn ::std::io::Write) -> ::std::io::Result<()>;
 }
 
-// FIXME: special type for secret key
 pub fn sign_transaction<T: Transaction>(tx: T, public_key: AccountPublicKey, secret_key: &SecretKey) -> T {
     let mut tx = tx;
     tx.set_public_key(public_key);
