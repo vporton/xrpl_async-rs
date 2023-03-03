@@ -16,11 +16,11 @@ use crate::response::{Response, StreamedResponse};
 
 /// Status not `"success"`
 #[derive(Debug)]
-pub struct XrplStatusError(pub Option<String>); // FIXME: Need `Option`?
+pub struct XrplStatusError(pub String);
 
 impl XrplStatusError {
     #[allow(clippy::new_without_default)]
-    pub fn new(err: Option<String>) -> Self {
+    pub fn new(err: String) -> Self {
         Self(err)
     }
 }
@@ -56,7 +56,8 @@ pub enum XrplError {
     #[from(ignore)]
     Connection(String),
     #[from(ignore)]
-    Json(String),
+    JsonParse(String),
+    WrongFormat,
     HttpStatus(StatusCode),
     Disconnect, // WebSocket disconnect
     XrpStatus(XrplStatusError),
@@ -82,7 +83,7 @@ impl Display for XrplError {
 
 impl From<serde_json::Error> for XrplError {
     fn from(value: serde_json::Error) -> Self {
-        Self::Json(value.to_string())
+        Self::JsonParse(value.to_string())
     }
 }
 

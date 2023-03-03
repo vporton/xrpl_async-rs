@@ -54,9 +54,9 @@ impl Response {
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
             // TODO: duplicate code
             return if let Some(Value::String(err)) = data.result.get("error") {
-                Err(XrplStatusError::new(Some(err.clone())).into())
+                Err(XrplStatusError::new(err.clone()).into())
             } else {
-                Err(XrplStatusError::new(None).into())
+                Err(XrplError::WrongFormat)
             };
         }
         // TODO: Implement without `clone`.
@@ -95,7 +95,7 @@ impl StreamedResponse {
             pub id: u64,
             // TODO: `type`
             // TODO: `warnings`
-            pub status: String,
+            // pub status: String, // no need, know by missing `result`
             pub forwarded: Option<bool>,
             pub warning: Option<String>,
         }
@@ -103,19 +103,15 @@ impl StreamedResponse {
         let data: StreamedResponse2 = match serde_json::from_value(s.clone()) {
             Ok(data) => data,
             // TODO: Rewrite this:
-            Err(_) => return if let Some(Value::String(s)) = s.get("error".to_owned()) {
-                Err(XrplStatusError::new(Some(s.clone())).into()) // TODO: without `clone`
-            } else {
-                Err("error is not string".to_string().into())
-            }
+            Err(_) => { // no `result`
+                // TODO: duplicate code
+                return if let Some(Value::String(s)) = s.get("error".to_owned()) {
+                    Err(XrplStatusError::new(s.clone()).into()) // TODO: without `clone`
+                } else {
+                    Err(XrplError::WrongFormat)
+                }
+            },
         };
-        if data.status != "success" {
-            // TODO: duplicate code
-            return Err(XrplStatusError::new(Some(
-                data.result.get("error")
-                    .ok_or_else(|| XrplError::Json("no `error` field".to_owned()))?.to_string())
-            ).into());
-        }
         Ok(StreamedResponse {
             result: Response {
                 result: data.result,
