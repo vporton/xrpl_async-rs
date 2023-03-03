@@ -7,13 +7,35 @@ use crate::address::{AccountPublicKey, Address};
 
 pub const TRANSACTION_TYPE_PAYMENT: i16 = 0;
 
-// FIXME: We have not all required fields from https://xrpl.org/transaction-common-fields.html
 #[derive(BinarySerialize, Clone)]
 pub struct PaymentTransaction {
-    #[binary(id = "TransactionType", rtype = "UInt16")]
-    pub transaction_type: i16,
     #[binary(id = "Account", rtype = "AccountID")]
     pub account: Address,
+    #[binary(id = "TransactionType", rtype = "UInt16")]
+    pub transaction_type: i16,
+    #[binary(id = "Fee", rtype = "Amount")]
+    pub fee: Option<Amount>,
+    #[binary(id = "Sequence", rtype = "UInt32")]
+    pub sequence: Option<u32>,
+    #[binary(id = "AccountTxnID", rtype = "Hash256")]
+    pub account_txn_id: Option<Hash<32>>,
+    #[binary(id = "Flags", rtype = "UInt32")]
+    pub flags: Option<u32>, // TODO: flag values
+    #[binary(id = "LastLedgerSequence", rtype = "UInt32")]
+    pub last_ledger_sequence: Option<u32>,
+    // #[binary(id = "Memos", rtype = "Array")] // TODO
+    // pub memos: Option<Vec<_>>,
+    // #[binary(id = "Signers", rtype = "Array")] // TODO
+    // pub signers: Option<Vec<_>>,
+    #[binary(id = "SourceTag", rtype = "UInt32")]
+    pub source_tag: Option<u32>,
+    #[binary(id = "SigningPubKey", rtype = "Blob")]
+    pub public_key: Option<AccountPublicKey>,
+    #[binary(id = "TicketSequence", rtype = "UInt32")]
+    pub ticket_sequence: Option<u32>,
+    #[binary(id = "TxnSignature", rtype = "Blob")]
+    pub signature: Option<Vec<u8>>,
+
     #[binary(id = "Amount", rtype = "Amount")]
     pub amount: Amount,
     #[binary(id = "Destination", rtype = "AccountID")]
@@ -29,10 +51,6 @@ pub struct PaymentTransaction {
     pub send_max: Option<Amount>,
     #[binary(id = "DeliverMin", rtype = "Amount")]
     pub deliver_min: Option<Amount>,
-    #[binary(id = "TxnSignature", rtype = "Blob")]
-    pub signature: Option<Vec<u8>>,
-    #[binary(id = "SigningPubKey", rtype = "Blob")]
-    pub public_key: Option<AccountPublicKey>,
 }
 
 #[cfg(test)]
@@ -58,8 +76,15 @@ mod tests {
         assert_eq!(our_address, Address::decode("rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh").unwrap());
         let private_key = SecretKey(Hash(<[u8; 32]>::try_from(&private_key[1..]).unwrap()));
         let tx = PaymentTransaction {
-            transaction_type: TRANSACTION_TYPE_PAYMENT,
             account: our_address.clone(),
+            transaction_type: TRANSACTION_TYPE_PAYMENT,
+            account_txn_id: None,
+            fee: None,
+            flags: None,
+            last_ledger_sequence: None,
+            sequence: None,
+            source_tag: None,
+            ticket_sequence: None,
             amount: Amount {
                 value: 10.0,
                 currency: "USD".to_string(),

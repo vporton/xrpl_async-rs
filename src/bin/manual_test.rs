@@ -53,8 +53,15 @@ async fn main() {
     let private_key = SecretKey(Hash(*(<&[u8; 32]>::try_from(&private_key[1..33]).unwrap())));
     // let public_key = &public_key[1..33];
     let tx = PaymentTransaction {
-        transaction_type: TRANSACTION_TYPE_PAYMENT,
         account: our_address.clone(),
+        transaction_type: TRANSACTION_TYPE_PAYMENT,
+        account_txn_id: None,
+        fee: None,
+        flags: None,
+        last_ledger_sequence: None,
+        sequence: None,
+        source_tag: None,
+        ticket_sequence: None,
         amount: Amount {
             value: 10.0,
             currency: "USD".to_string(),
