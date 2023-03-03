@@ -1,7 +1,7 @@
 use std::convert::From;
 use serde::{de, Deserialize, Serialize, Serializer};
 use xrpl_binary_codec::serializer::HASH_PREFIX_TRANSACTION;
-use crate::address::AccountPublicKey;
+use crate::address::{AccountPublicKey, SecretKey};
 use crate::connection::{Api, XrplError};
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;
@@ -59,12 +59,12 @@ pub async fn submit<'a, A>(api: &'a A, data: &'a TransactionRequest)
 }
 
 /// TODO: Change API not to mess public and secret key.
-pub async fn sign_and_submit<A, T>(api: &A,
-                                   tx: T,
-                                   public_key: AccountPublicKey,
-                                   secret_key: &[u8],
-                                   fail_hard: bool)
-                                   -> Result<TypedResponse<TransactionResponse>, A::Error>
+pub async fn sign_and_submit<'a, A, T>(api: &A,
+                                       tx: T,
+                                       public_key: AccountPublicKey, // TODO: `&`
+                                       secret_key: &SecretKey,
+                                       fail_hard: bool)
+                                       -> Result<TypedResponse<TransactionResponse>, A::Error>
     where A: Api,
           A::Error: From<XrplError>,
           T: Transaction,

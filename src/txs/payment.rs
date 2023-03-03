@@ -39,11 +39,12 @@ pub struct PaymentTransaction {
 mod tests {
     use xrpl::core::keypairs::derive_keypair;
     use xrpl_binary_codec::serializer::{HASH_PREFIX_TRANSACTION, HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE};
-    use crate::address::{Address, Encoding};
+    use crate::address::{Address, Encoding, SecretKey};
     use crate::objects::amount::Amount;
     use crate::txs::payment::{PaymentTransaction, TRANSACTION_TYPE_PAYMENT};
     use crate::txs::sign_transaction;
     use crate::txs::TransactionSerializer;
+    use crate::types::Hash;
 
     #[test]
     fn test_serialize() {
@@ -55,7 +56,7 @@ mod tests {
         assert_eq!(public_key, hex::decode( "EDC5248F3F06990D2E694C83AF55C45206ACD4AABC1151020600ECD6B75A5FF628").unwrap());
         assert_eq!(private_key, hex::decode("EDE8249E957A8A50AF727C78B214F7192FD69F72E5EEC105FB1D838D46D26F06B5").unwrap());
         assert_eq!(our_address, Address::decode("rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh").unwrap());
-        let private_key = &private_key[1..];
+        let private_key = SecretKey(Hash(<[u8; 32]>::try_from(&private_key[1..]).unwrap()));
         let tx = PaymentTransaction {
             transaction_type: TRANSACTION_TYPE_PAYMENT,
             account: our_address.clone(),
@@ -81,7 +82,7 @@ mod tests {
         let mut ser = Vec::new();
         PaymentTransaction::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap(); // TODO: `unwrap`
         assert_eq!(ser.as_slice(), hex::decode("5354580012000061D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA969D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA981147CCFE86388B264396710C29F69025DB1DFA4AE4C83147CCFE86388B264396710C29F69025DB1DFA4AE4C").unwrap());
-        let mut tx = sign_transaction(tx, Encoding(public_key.as_slice().try_into().unwrap()), private_key);
+        let mut tx = sign_transaction(tx, Encoding(public_key.as_slice().try_into().unwrap()), &private_key);
         tx.signature = None;
         let mut ser = Vec::new();
         PaymentTransaction::serialize(&tx, &HASH_PREFIX_TRANSACTION, &mut ser).unwrap(); // TODO: `unwrap`

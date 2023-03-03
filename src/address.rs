@@ -8,6 +8,7 @@ use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
 use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Visitor;
+use crate::types::Hash;
 
 #[derive(Debug)]
 pub struct WrongPrefixError;
@@ -324,3 +325,5 @@ pub mod option_base58 {
         Ok(result.map(|v| v.0))
     }
 }
+
+pub struct SecretKey(pub Hash<32>);

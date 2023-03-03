@@ -3,13 +3,13 @@ use reqwest::Client;
 use tokio_stream::StreamExt;
 use workflow_websocket::client::{Options, WebSocket};
 use xrpl::core::keypairs::derive_keypair;
-use xrpl_async::address::{Address, Encoding};
+use xrpl_async::address::{Address, Encoding, SecretKey};
 use xrpl_async::connection::{Api, JsonRpcApi, WebSocketApi, XrplError};
 use xrpl_async::methods::account_channels::{account_channels, ChannelsRequest};
 use xrpl_async::methods::submit::sign_and_submit;
 use xrpl_async::objects::amount::Amount;
 use xrpl_async::txs::payment::{PaymentTransaction, TRANSACTION_TYPE_PAYMENT};
-use xrpl_async::types::LedgerForRequest;
+use xrpl_async::types::{Hash, LedgerForRequest};
 // use xrpl::core::addresscodec::utils::decode_base58;
 // use xrpl_async::methods::submit::sign_and_submit;
 // use xrpl_async::objects::amount::Amount;
@@ -50,7 +50,7 @@ async fn main() {
     let (public_key, private_key) = derive_keypair(our_seed, false).unwrap(); // TODO: ineffective!
     let (public_key, private_key) =
         (hex::decode(public_key).unwrap(), hex::decode(private_key).unwrap());
-    let private_key = &private_key[1..33];
+    let private_key = SecretKey(Hash(*(<&[u8; 32]>::try_from(&private_key[1..33]).unwrap())));
     // let public_key = &public_key[1..33];
     let tx = PaymentTransaction {
         transaction_type: TRANSACTION_TYPE_PAYMENT,
@@ -77,7 +77,7 @@ async fn main() {
     let response = sign_and_submit(&api,
                                    tx.clone(),
                                    Encoding(public_key.as_slice().try_into().unwrap()),
-                                   private_key, //.as_slice(),
+                                   &private_key, //.as_slice(),
                                    true).await;//.unwrap();
     println!("TX RESPONSE: {:?}", response);
 
@@ -85,7 +85,7 @@ async fn main() {
     let response = sign_and_submit(&api2,
                                    tx,
                                    Encoding(public_key.as_slice().try_into().unwrap()),
-                                   private_key, //.as_slice(),
+                                   &private_key, //.as_slice(),
                                    true).await;//.unwrap();
     println!("TX RESPONSE: {:?}", response);
 }
