@@ -95,7 +95,16 @@ impl StreamedResponse {
             pub forwarded: Option<bool>,
             pub warning: Option<String>,
         }
-        let data: StreamedResponse2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
+        // TODO: Don't `clone`.
+        let data: StreamedResponse2 = match serde_json::from_value(s.clone()) {
+            Ok(data) => data,
+            // TODO: Rewrite this:
+            Err(_) => return if let Some(Value::String(s)) = s.get("error".to_owned()) {
+                Err(s.clone().into())
+            } else {
+                Err("error is not string".to_string().into())
+            }
+        };
         if data.status != "success" {
             // FIXME: `unwrap` is very wrong:
             return Err(XrplStatusError::new(data.result.get("error").map(|v| v.as_str().unwrap().to_string())).into());

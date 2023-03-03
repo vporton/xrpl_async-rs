@@ -8,5 +8,8 @@
 - Debug print `Hash` and `Account` in hex.
 - Asynchronous interface for watching when a ledger/transaction becomes
   included into the ledger.
+- Errors for JSON RPC and WebSocket APIs have different "structure":
+  `Err(XrpStatus(XrplStatusError(Some("invalidTransaction"))))` vs
+  `Err(Json("invalidTransaction"))`.
 - `FIXME` and `TODO` in the sources.
 - File `TODO-checkboxes.md`.
