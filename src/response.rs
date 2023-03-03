@@ -52,8 +52,11 @@ impl Response {
         }
         let data: Response2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
-            // FIXME: `unwrap` is very wrong:
-            return Err(XrplStatusError::new(data.result.get("error").map(|v| v.as_str().unwrap().to_string())).into());
+            // TODO: duplicate code
+            return Err(XrplStatusError::new(Some(
+                data.result.get("error")
+                    .ok_or_else(|| XrplError::Json("no `error` field".to_owned()))?.to_string())
+            ).into());
         }
         // TODO: Implement without `clone`.
         Ok(Self {
@@ -106,8 +109,11 @@ impl StreamedResponse {
             }
         };
         if data.status != "success" {
-            // FIXME: `unwrap` is very wrong:
-            return Err(XrplStatusError::new(data.result.get("error").map(|v| v.as_str().unwrap().to_string())).into());
+            // TODO: duplicate code
+            return Err(XrplStatusError::new(Some(
+                data.result.get("error")
+                    .ok_or_else(|| XrplError::Json("no `error` field".to_owned()))?.to_string())
+            ).into());
         }
         Ok(StreamedResponse {
             result: Response {
