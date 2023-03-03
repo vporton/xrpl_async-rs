@@ -5,6 +5,8 @@ use crate::txs::{Transaction, TransactionSerializer};
 use crate::types::Hash;
 use crate::address::{AccountPublicKey, Address};
 
+pub const TRANSACTION_TYPE_PAYMENT: i16 = 0;
+
 // FIXME: We have not all required fields from https://xrpl.org/transaction-common-fields.html
 #[derive(BinarySerialize, Clone)]
 pub struct PaymentTransaction {
@@ -39,7 +41,7 @@ mod tests {
     use xrpl_binary_codec::serializer::{HASH_PREFIX_TRANSACTION, HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE};
     use crate::address::{Address, Encoding};
     use crate::objects::amount::Amount;
-    use crate::txs::payment::PaymentTransaction;
+    use crate::txs::payment::{PaymentTransaction, TRANSACTION_TYPE_PAYMENT};
     use crate::txs::sign_transaction;
     use crate::txs::TransactionSerializer;
 
@@ -55,7 +57,7 @@ mod tests {
         assert_eq!(our_address, Address::decode("rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh").unwrap());
         let private_key = &private_key[1..];
         let tx = PaymentTransaction {
-            transaction_type: 0, // FIXME: not here
+            transaction_type: TRANSACTION_TYPE_PAYMENT,
             account: our_address.clone(),
             amount: Amount {
                 value: 10.0,

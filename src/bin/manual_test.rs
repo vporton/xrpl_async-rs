@@ -8,7 +8,7 @@ use xrpl_async::connection::{Api, JsonRpcApi, WebSocketApi, XrplError};
 use xrpl_async::methods::account_channels::{account_channels, ChannelsRequest};
 use xrpl_async::methods::submit::sign_and_submit;
 use xrpl_async::objects::amount::Amount;
-use xrpl_async::txs::payment::PaymentTransaction;
+use xrpl_async::txs::payment::{PaymentTransaction, TRANSACTION_TYPE_PAYMENT};
 use xrpl_async::types::LedgerForRequest;
 // use xrpl::core::addresscodec::utils::decode_base58;
 // use xrpl_async::methods::submit::sign_and_submit;
@@ -53,7 +53,7 @@ async fn main() {
     let private_key = &private_key[1..33];
     // let public_key = &public_key[1..33];
     let tx = PaymentTransaction {
-        transaction_type: 0, // FIXME: not here
+        transaction_type: TRANSACTION_TYPE_PAYMENT,
         account: our_address.clone(),
         amount: Amount {
             value: 10.0,
