@@ -170,16 +170,15 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                 Message::Close => {
                     self.api.client.disconnect().await.map_err(|e| Connection(e.to_string()))?; // Prevent attempts to re-connect...
                     // ... because we lost state.
-                    unsafe { &mut *self.api.responses.get().as_ptr() }.clear(); // TODO: Check `unsafe`s again.
+                    self.api.responses.get().borrow_mut().clear();
                     return Err(XrplError::Disconnect);
                 },
                 Message::Text(msg) => {
                     let response: Result<StreamedResponse, XrplError> = StreamedResponse::from_str(&msg);
                     match response {
                         Ok(response) => {
-                            // TODO: Check `unsafe`s again.
-                            unsafe { &mut *self.api.responses.get().as_ptr() }.insert(response.id, response.result);
-                            if let Some(response) = unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&response.id) {
+                            self.api.responses.get().borrow_mut().insert(response.id, response.result);
+                            if let Some(response) = self.api.responses.get().borrow_mut().remove(&response.id) {
                                 return Ok(response);
                             }
                         },
@@ -193,8 +192,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
         }
     }
     pub fn do_drop(&mut self) {
-        // TODO: Check `unsafe` again.
-        unsafe { &mut *self.api.responses.get().as_ptr() }.remove(&self.id);
+        self.api.responses.get().borrow_mut().remove(&self.id);
     }
 }
 
