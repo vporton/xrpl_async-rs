@@ -108,7 +108,7 @@ impl Api for JsonRpcApi {
     }
 }
 
-// TODO: Is this efficient?
+// Is this efficient?
 pub struct WebSocketApi {
     client: WebSocket,
     responses: Fragile<RefCell<HashMap<u64, Response>>>,
