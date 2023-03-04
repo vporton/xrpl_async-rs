@@ -114,7 +114,7 @@ impl StreamedResponse {
             // TODO: Rewrite this:
             Err(_) => { // no `result`
                 return if let Some(Value::String(s)) = s.get("error".to_owned()) {
-                    Err(XrplStatusError::new(s.clone()).into()) // TODO: without `clone`
+                    Err(XrplStatusError::new(s.clone()).into())
                 } else {
                     Err(XrplError::WrongFormat)
                 }
