@@ -129,7 +129,8 @@ pub mod option_xrp {
 
 const XPR_DIGITS_AFTER_DOT: usize = 6;
 
-#[derive(Debug, Display)] // TODO: more particular `Display` format
+#[derive(Debug, Display)]
+#[display(fmt = "Token amount out of bounds.")]
 pub struct TokenAmountError;
 
 impl TokenAmountError {
