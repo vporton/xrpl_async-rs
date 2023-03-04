@@ -1,8 +1,8 @@
 use std::array::TryFromSliceError;
-use std::fmt::{Display, Formatter};
+use std::fmt::Formatter;
 use std::iter::once;
 use ::hex::FromHexError;
-use derive_more::From;
+use derive_more::{Display, From};
 use xrpl::core::addresscodec::exceptions::XRPLAddressCodecException;
 use xrpl::core::addresscodec::utils::{decode_base58, encode_base58};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -19,19 +19,16 @@ impl WrongPrefixError {
     }
 }
 
-#[derive(Debug, From)]
+#[derive(Debug, Display, From)]
 pub enum FromXRPDecodingError {
+    #[display(fmt = "Wrong base58 format.")]
     FromBase58Check(XRPLAddressCodecException),
+    #[display(fmt = "Wrong hex number.")]
     Hex(FromHexError),
+    #[display(fmt = "Wrong base58 prefix.")]
     WrongPrefix(WrongPrefixError),
+    #[display(fmt = "Wrong array length.")]
     WrongLength(TryFromSliceError),
-}
-
-// TODO: hack
-impl Display for FromXRPDecodingError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "FromXRPDecodingError")
-    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
