@@ -83,7 +83,7 @@ async fn main() {
     println!("** JsonRpcApi transaction **");
     let response = sign_and_submit(&api,
                                    tx.clone(),
-                                   Encoding(public_key.as_slice().try_into().unwrap()),
+                                   &Encoding(public_key.as_slice().try_into().unwrap()),
                                    &private_key, //.as_slice(),
                                    true).await.unwrap_err();
     println!("TX RESPONSE: {}", response);
@@ -91,7 +91,7 @@ async fn main() {
     println!("** WebSocketApi transaction **");
     let response = sign_and_submit(&api2,
                                    tx,
-                                   Encoding(public_key.as_slice().try_into().unwrap()),
+                                   &Encoding(public_key.as_slice().try_into().unwrap()),
                                    &private_key, //.as_slice(),
                                    true).await.unwrap_err();
     println!("TX RESPONSE: {}", response);

@@ -60,7 +60,7 @@ pub async fn submit<'a, A>(api: &'a A, data: &'a TransactionRequest)
 
 pub async fn sign_and_submit<'a, A, T>(api: &A,
                                        tx: T,
-                                       public_key: AccountPublicKey, // TODO: `&`
+                                       public_key: &AccountPublicKey,
                                        secret_key: &SecretKey,
                                        fail_hard: bool)
                                        -> Result<TypedResponse<TransactionResponse>, A::Error>
