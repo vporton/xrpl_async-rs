@@ -66,7 +66,6 @@ impl<'a> Serialize for Request<'a> {
 impl<'a> Serialize for StreamedRequest<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let mut params = serde_json::Map::<String, Value>::new();
-        // TODO: Don't clone
         params.insert(ID_KEY.clone(), Value::Number(Number::from(self.id)));
         params.insert(COMMAND_KEY.clone(), Value::String(self.request.command.to_owned()));
         if let Some(api_version) = self.request.api_version {
@@ -74,7 +73,7 @@ impl<'a> Serialize for StreamedRequest<'a> {
         }
         if let Some(params2) = self.request.params.as_object() { // hack
             for (key, value) in params2 {
-                params.insert(key.clone(), value.to_owned());
+                params.insert(key.to_owned(), value.to_owned());
             }
         }
         json!(params).serialize(serializer)
