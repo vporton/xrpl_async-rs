@@ -123,7 +123,7 @@ impl StreamedResponse {
         Ok(StreamedResponse {
             result: Response {
                 result: data.result,
-                load: &data.warning.as_ref() == &Some(&*LOAD_KEY),
+                load: data.warning.as_ref() == Some(&*LOAD_KEY),
                 warnings: data.warnings,
                 forwarded: data.forwarded == Some(true),
             },

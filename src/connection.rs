@@ -69,6 +69,8 @@ pub enum XrplError {
     #[display(fmt = "WebSocket disconnected")]
     Disconnect,
     XrplStatus(XrplStatusError),
+    #[display(fmt = "Cannot construct JSON object (internal error)")]
+    CannotConstructJson,
 }
 
 impl de::Error for XrplError {

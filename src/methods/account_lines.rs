@@ -100,6 +100,6 @@ pub async fn account_lines<'a, A>(
         data,
     };
     let (response, paginator) =
-        Paginator::start(api, (&request).try_into().map_err(de::Error::custom)?).await?; // TODO: wrong error
+        Paginator::start(api, (&request).try_into().map_err(|_| XrplError::CannotConstructJson)?).await?;
     Ok((response.try_into()?, paginator))
 }
