@@ -149,8 +149,7 @@ impl<
     }
 }
 
-// TODO: Rename.
-struct AddressVisitor<
+struct HashVisitor<
     const LENGTH: usize,
     const TYPE_PREFIX: u8,
     const HUMAN_REPRESENTATION_STARTS_WITH: char,
@@ -161,7 +160,7 @@ impl<
     const LENGTH: usize,
     const TYPE_PREFIX: u8,
     const HUMAN_REPRESENTATION_STARTS_WITH: char,
-> Visitor<'de> for AddressVisitor<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
+> Visitor<'de> for HashVisitor<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH> {
     type Value = Encoding<LENGTH, TYPE_PREFIX, HUMAN_REPRESENTATION_STARTS_WITH>;
 
     fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
