@@ -54,7 +54,6 @@ impl Response {
         #[derive(Deserialize)]
         struct Response2 {
             pub result: Value,
-            // TODO: `warnings`
             pub warning: Option<String>,
             pub warnings: Option<Vec<Warning>>,
             pub forwarded: Option<bool>,
