@@ -12,12 +12,19 @@ lazy_static! {
     static ref ERROR_KEY: String = "error".to_string();
 }
 
+#[derive(Clone, Debug, Deserialize)]
+pub struct Warning {
+    pub id: u32,
+    pub message: String,
+    pub details: Option<Value>,
+}
+
 /// For JSON RPC.
 #[derive(Debug)]
 pub struct Response {
     pub result: Value,
     pub load: bool,
-    // TODO: `warnings`
+    pub warnings: Option<Vec<Warning>>,
     pub forwarded: bool,
 }
 
@@ -25,7 +32,7 @@ pub struct Response {
 pub struct TypedResponse<T> {
     pub result: T,
     pub load: bool,
-    // TODO: `warnings`
+    pub warnings: Option<Vec<Warning>>,
     pub forwarded: bool,
 }
 
@@ -36,6 +43,7 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
         Ok(Self {
             result: T::deserialize(value.result)?,
             load: value.load,
+            warnings: value.warnings,
             forwarded: value.forwarded,
         })
     }
@@ -48,6 +56,7 @@ impl Response {
             pub result: Value,
             // TODO: `warnings`
             pub warning: Option<String>,
+            pub warnings: Option<Vec<Warning>>,
             pub forwarded: Option<bool>,
         }
         let data: Response2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
@@ -63,6 +72,7 @@ impl Response {
         Ok(Self {
             result: data.result,
             load: data.warning == Some(LOAD_KEY.clone()),
+            warnings: data.warnings,
             forwarded: data.forwarded == Some(true),
         })
     }
@@ -81,7 +91,7 @@ impl FromStr for Response {
 pub struct StreamedResponse {
     pub result: Response,
     pub id: u64,
-    // TODO: `type`
+    // TODO: `type` // FIXME: Accept replies only with `type == "response"`.
 }
 
 // https://github.com/serde-rs/serde/issues/2382
@@ -94,7 +104,7 @@ impl StreamedResponse {
             pub result: Value,
             pub id: u64,
             // TODO: `type`
-            // TODO: `warnings`
+            pub warnings: Option<Vec<Warning>>,
             // pub status: String, // no need, know by missing `result`
             pub forwarded: Option<bool>,
             pub warning: Option<String>,
@@ -116,6 +126,7 @@ impl StreamedResponse {
             result: Response {
                 result: data.result,
                 load: data.warning == Some(LOAD_KEY.clone()), // TODO: Implement without `clone`.
+                warnings: data.warnings,
                 forwarded: data.forwarded == Some(true),
             },
             id: data.id,

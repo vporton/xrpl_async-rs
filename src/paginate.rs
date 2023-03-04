@@ -7,7 +7,7 @@ use serde_json::Value;
 use tokio_stream::Stream;
 use crate::connection::{Api, XrplError};
 use crate::request::Request;
-use crate::response::{Response, TypedResponse};
+use crate::response::{Response, TypedResponse, Warning};
 
 lazy_static! {
     static ref MARKER_KEY: String = "marker".to_string();
@@ -69,10 +69,12 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
         let this = self.get_mut();
         let mut forwarded: bool = false;
         let mut load: bool = false;
+        let mut warnings: Option<Vec<Warning>> = None;
         if let Some(front) = this.list.pop_front() {
             Poll::Ready(Some(Ok(TypedResponse {
                 result: front,
                 load: load && this.list.is_empty(), // for the last item in the downloaded list
+                warnings,
                 forwarded,
             })))
         } else {
@@ -83,6 +85,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                         let response = response?;
                         load = response.load;
                         forwarded = response.forwarded;
+                        warnings = response.warnings;
                         // TODO: Duplicate code:
                         // TODO: Can do without `clone`?
                         this.list = T::list(&response.result)
@@ -93,10 +96,12 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                             .into();
                         this.marker = response.result.get(&*MARKER_KEY).cloned();
                         if let Some(front) = this.list.pop_front() {
+                            #[allow(unused_assignments)]
                             Poll::Ready(Some(Ok(
                                 TypedResponse {
                                     result: front,
                                     load: load && this.list.is_empty(), // for the last item in the downloaded list
+                                    warnings: warnings.clone(), // TODO: `clone` is against "value captured by `warnings` is never read" in Clippy (apparently, a compiler bug)
                                     forwarded,
                                 }
                             )))
