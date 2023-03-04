@@ -92,8 +92,7 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                             .map_err(de::Error::custom)?
                             .iter()
                             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
-                            .collect::<Result<Vec<T>, XrplError>>()?
-                            .into();
+                            .collect::<Result<VecDeque<T>, XrplError>>()?;
                         this.marker = response.result.get(&*MARKER_KEY).cloned();
                         if let Some(front) = this.list.pop_front() {
                             #[allow(unused_assignments)]
