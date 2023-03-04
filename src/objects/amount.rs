@@ -1,4 +1,4 @@
-use crate::address::Address;
+use crate::hashes::Address;
 
 #[derive(Clone)]
 pub struct Amount {

@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 use byteorder::{BigEndian, WriteBytesExt};
 use xrpl::utils::{MAX_IOU_EXPONENT, MIN_IOU_EXPONENT};
-use crate::address::{Address, Encoding};
+use crate::hashes::{Address, Encoding};
 use crate::objects::amount::Amount;
 use crate::types::Hash;
 

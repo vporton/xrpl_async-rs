@@ -1,7 +1,7 @@
 use std::convert::From;
 use serde::{de, Deserialize, Serialize, Serializer};
 use xrpl_binary_codec::serializer::HASH_PREFIX_TRANSACTION;
-use crate::address::{AccountPublicKey, SecretKey};
+use crate::hashes::{AccountPublicKey, SecretKey};
 use crate::connection::{Api, XrplError};
 use crate::request::TypedRequest;
 use crate::response::TypedResponse;

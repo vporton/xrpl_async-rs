@@ -1,6 +1,6 @@
 use std::convert::From;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use crate::address::Address;
+use crate::hashes::Address;
 use crate::connection::{Api, XrplError};
 use crate::objects::account_root::AccountRoot;
 use crate::objects::signer_list::SignerList;

@@ -3,7 +3,7 @@ use reqwest::Client;
 use tokio_stream::StreamExt;
 use workflow_websocket::client::{Options, WebSocket};
 use xrpl::core::keypairs::derive_keypair;
-use xrpl_async::address::{Address, Encoding, SecretKey};
+use xrpl_async::hashes::{Address, Encoding, SecretKey};
 use xrpl_async::connection::{Api, JsonRpcApi, WebSocketApi, XrplError};
 use xrpl_async::methods::account_channels::{account_channels, ChannelsRequest};
 use xrpl_async::methods::submit::sign_and_submit;

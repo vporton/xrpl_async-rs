@@ -1,5 +1,5 @@
 use serde::{Deserialize, Deserializer};
-use crate::address::Address;
+use crate::hashes::Address;
 use crate::types::Hash;
 
 #[derive(Clone, Copy, Debug)]

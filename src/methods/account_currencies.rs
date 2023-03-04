@@ -1,6 +1,6 @@
 use std::convert::From;
 use serde::{de, Deserialize, Serialize};
-use crate::address::Address;
+use crate::hashes::Address;
 use crate::connection::{Api, XrplError};
 use crate::types::{Hash, LedgerForRequest};
 use crate::request::TypedRequest;

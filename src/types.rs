@@ -9,7 +9,6 @@ use serde::ser::SerializeMap;
 use serde_json::json;
 use sha2::{Digest, Sha512_256};
 
-// TODO: `pub`?
 #[derive(Clone, Debug)]
 pub struct Hash<const LENGTH: usize>(pub [u8; LENGTH]);
 

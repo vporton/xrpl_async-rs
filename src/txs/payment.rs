@@ -1,9 +1,9 @@
 use crate::objects::amount::Amount;
 use xrpl_async_macroses::BinarySerialize;
-// use crate::address::{AccountPublicKey, Address};
+// use crate::hashes::{AccountPublicKey, Address};
 use crate::txs::{Transaction, TransactionSerializer};
 use crate::types::Hash;
-use crate::address::{AccountPublicKey, Address};
+use crate::hashes::{AccountPublicKey, Address};
 
 pub const TRANSACTION_TYPE_PAYMENT: i16 = 0;
 
@@ -57,7 +57,7 @@ pub struct PaymentTransaction {
 mod tests {
     use xrpl::core::keypairs::derive_keypair;
     use xrpl_binary_codec::serializer::{HASH_PREFIX_TRANSACTION, HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE};
-    use crate::address::{Address, Encoding, SecretKey};
+    use crate::hashes::{Address, Encoding, SecretKey};
     use crate::objects::amount::Amount;
     use crate::txs::payment::{PaymentTransaction, TRANSACTION_TYPE_PAYMENT};
     use crate::txs::sign_transaction;

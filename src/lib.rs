@@ -1,4 +1,4 @@
-pub mod address;
+pub mod hashes;
 pub mod types;
 pub mod request;
 pub mod response;

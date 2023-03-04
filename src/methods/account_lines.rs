@@ -1,6 +1,6 @@
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-use crate::address::Address;
+use crate::hashes::Address;
 use crate::connection::{Api, XrplError};
 use crate::methods::account_channels::ChannelPaginator;
 use crate::paginate::{Paginator, PaginatorExtractor};

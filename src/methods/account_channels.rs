@@ -1,7 +1,7 @@
 use std::convert::From;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-use crate::address::{AccountPublicKey, Address};
+use crate::hashes::{AccountPublicKey, Address};
 use crate::connection::{Api, XrplError};
 use crate::types::{Hash, LedgerForRequest};
 use crate::paginate::{Paginator, PaginatorExtractor};
@@ -52,9 +52,9 @@ impl<'de> Deserialize<'de> for ChannelPaginator {
             pub channel_id: Hash<32>,
             pub destination_account: Address,
             pub settle_delay: u64,
-            #[serde(with = "crate::address::option_base58")]
+            #[serde(with = "crate::hashes::option_base58")]
             pub public_key: Option<AccountPublicKey>,
-            #[serde(with = "crate::address::option_hex")]
+            #[serde(with = "crate::hashes::option_hex")]
             pub public_key_hex: Option<AccountPublicKey>,
             pub expiration: Option<u64>,
             pub cancel_after: Option<u64>,
