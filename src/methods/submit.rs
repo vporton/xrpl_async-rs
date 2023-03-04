@@ -58,7 +58,6 @@ pub async fn submit<'a, A>(api: &'a A, data: &'a TransactionRequest)
     Ok(api.call((&request).try_into().map_err(de::Error::custom)?).await?.try_into()?)
 }
 
-/// TODO: Change API not to mess public and secret key.
 pub async fn sign_and_submit<'a, A, T>(api: &A,
                                        tx: T,
                                        public_key: AccountPublicKey, // TODO: `&`
