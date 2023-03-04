@@ -41,19 +41,16 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
     pub async fn start(api: &'a A, request: Request<'a>) -> Result<(Response, Paginator<'a, A, T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        // TODO: Can do without `clone`?
         let list = T::list(&response.result)
             .map_err(de::Error::custom)?
             .iter()
             .map(|e| T::deserialize(e.clone()).map_err(de::Error::custom))
-            .collect::<Result<Vec<T>, XrplError>>().map_err::<XrplError, _>(de::Error::custom)?
-            .into();
+            .collect::<Result<VecDeque<T>, XrplError>>().map_err::<XrplError, _>(de::Error::custom)?;
         Ok((response, Self::new(api, request, list)))
     }
     pub async fn first_page(api: &'a A, request: Request<'a>) -> Result<(Response, Vec<T>), A::Error> {
         let response = api.call(request.clone()).await?;
         // TODO: Duplicate code:
-        // TODO: Can do without `clone`?
         let list: Vec<T> = T::list(&response.result)
             .map_err(de::Error::custom)?
             .iter()
