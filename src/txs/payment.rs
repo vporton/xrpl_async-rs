@@ -68,7 +68,7 @@ mod tests {
     fn test_serialize() {
         let our_address = Address::decode("rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh").unwrap();
         let our_seed = "sEdTWjtgXkxfh2p4KrTyDzmKu8aYNnK";
-        let (public_key, private_key) = derive_keypair(our_seed, false).unwrap(); // TODO: ineffective!
+        let (public_key, private_key) = derive_keypair(our_seed, false).unwrap(); // ineffective!
         let (public_key, private_key) =
             (hex::decode(public_key).unwrap(), hex::decode(private_key).unwrap());
         assert_eq!(public_key, hex::decode( "EDC5248F3F06990D2E694C83AF55C45206ACD4AABC1151020600ECD6B75A5FF628").unwrap());
