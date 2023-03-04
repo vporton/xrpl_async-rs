@@ -131,19 +131,17 @@ impl WebSocketApi {
             id: Fragile::new(Cell::new(0)),
         }
     }
-    pub async fn reconnect(&self) -> Result<(), WebSocketApiError> {
+    pub async fn reconnect(&self) -> Result<(), XrplError> {
         self.client.reconnect().await.map_err(|e| XrplError::Connection(e.to_string()))
     }
 }
 
-pub type WebSocketApiError = XrplError; // TODO
-
 #[async_trait]
 impl Api for WebSocketApi {
-    type Error = WebSocketApiError;
+    type Error = XrplError;
 
     #[allow(clippy::needless_lifetimes)]
-    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, WebSocketApiError> {
+    async fn call<'a>(&self, request: Request<'a>) -> Result<Response, XrplError> {
         let waiter =
             WebSocketMessageWaiterWithoutDrop::create(self, request).await?;
         waiter.wait().await
@@ -160,7 +158,7 @@ struct WebSocketMessageWaiterWithoutDrop<'a> {
 
 impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
     pub async fn create(api: &'a WebSocketApi, request: Request<'a>)
-                        -> Result<WebSocketMessageWaiterWithoutDrop<'a>, WebSocketApiError>
+                        -> Result<WebSocketMessageWaiterWithoutDrop<'a>, XrplError>
     {
         let id = api.id.get().get();
         api.id.get().set(id + 1);
@@ -175,7 +173,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
             api,
         })
     }
-    pub async fn wait(&self) -> Result<Response, WebSocketApiError> {
+    pub async fn wait(&self) -> Result<Response, XrplError> {
         loop {
             match self.api.client.recv().await.map_err(|e| Connection(e.to_string()))? {
                 Message::Open => {},
@@ -183,7 +181,7 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                     self.api.client.disconnect().await.map_err(|e| Connection(e.to_string()))?; // Prevent attempts to re-connect...
                     // ... because we lost state.
                     unsafe { &mut *self.api.responses.get().as_ptr() }.clear(); // TODO: Check `unsafe`s again.
-                    return Err(WebSocketApiError::Disconnect);
+                    return Err(XrplError::Disconnect);
                 },
                 Message::Text(msg) => {
                     let response: Result<StreamedResponse, XrplError> = StreamedResponse::from_str(&msg);
@@ -216,11 +214,11 @@ pub struct WebSocketMessageWaiter<'a>(WebSocketMessageWaiterWithoutDrop<'a>);
 
 impl<'a> WebSocketMessageWaiter<'a> {
     pub async fn create(api: &'a WebSocketApi, request: Request<'a>)
-                        -> Result<WebSocketMessageWaiter<'a>, WebSocketApiError>
+                        -> Result<WebSocketMessageWaiter<'a>, XrplError>
     {
         Ok(Self(WebSocketMessageWaiterWithoutDrop::create(api, request).await?))
     }
-    pub async fn wait(&self) -> Result<Response, WebSocketApiError> {
+    pub async fn wait(&self) -> Result<Response, XrplError> {
         self.0.wait().await
     }
 }
