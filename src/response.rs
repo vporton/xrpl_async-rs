@@ -123,7 +123,7 @@ impl StreamedResponse {
         Ok(StreamedResponse {
             result: Response {
                 result: data.result,
-                load: data.warning == Some(LOAD_KEY.clone()), // TODO: Implement without `clone`.
+                load: &data.warning.as_ref() == &Some(&*LOAD_KEY),
                 warnings: data.warnings,
                 forwarded: data.forwarded == Some(true),
             },
