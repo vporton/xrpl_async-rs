@@ -47,7 +47,7 @@ async fn main() {
 
     let our_address = Address::decode("rU4Ai74ohgtUP8evP3qd2HuxWSFvLVt7uh").unwrap();
     let our_seed = "sEdTWjtgXkxfh2p4KrTyDzmKu8aYNnK";
-    let (public_key, private_key) = derive_keypair(our_seed, false).unwrap(); // TODO: ineffective!
+    let (public_key, private_key) = derive_keypair(our_seed, false).unwrap(); // ineffective!
     let (public_key, private_key) =
         (hex::decode(public_key).unwrap(), hex::decode(private_key).unwrap());
     let private_key = SecretKey(Hash(*(<&[u8; 32]>::try_from(&private_key[1..33]).unwrap())));
