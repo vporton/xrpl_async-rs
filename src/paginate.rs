@@ -40,7 +40,6 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
     }
     pub async fn start(api: &'a A, request: Request<'a>) -> Result<(Response, Paginator<'a, A, T>), A::Error> {
         let response = api.call(request.clone()).await?;
-        // TODO: Duplicate code:
         let list = T::list(&response.result)
             .map_err(de::Error::custom)?
             .iter()
@@ -50,7 +49,6 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Paginator<'a, A, T>
     }
     pub async fn first_page(api: &'a A, request: Request<'a>) -> Result<(Response, Vec<T>), A::Error> {
         let response = api.call(request.clone()).await?;
-        // TODO: Duplicate code:
         let list: Vec<T> = T::list(&response.result)
             .map_err(de::Error::custom)?
             .iter()
