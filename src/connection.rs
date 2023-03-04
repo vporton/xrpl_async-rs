@@ -79,16 +79,6 @@ impl de::Error for XrplError {
 
 impl std::error::Error for XrplError {}
 
-// impl Display for XrplError {
-//     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-//         match self {
-//             XrplError::Message(msg) => formatter.write_str(msg),
-//             other => formatter.write_str(&format!("{:?}", other)), // TODO
-//             /* and so forth */
-//         }
-//     }
-// }
-
 impl From<serde_json::Error> for XrplError {
     fn from(value: serde_json::Error) -> Self {
         Self::JsonParse(value.to_string())
