@@ -53,7 +53,7 @@ impl<'a> Serialize for Request<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let mut params = serde_json::Map::<String, Value>::new();
         if let Some(api_version) = self.api_version {
-            params.insert(API_VERSION_KEY.clone(), api_version.into()); // TODO: Don't clone.
+            params.insert(API_VERSION_KEY.clone(), api_version.into());
         }
         json!({
             "method": self.command,
