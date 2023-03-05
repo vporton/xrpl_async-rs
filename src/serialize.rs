@@ -253,7 +253,7 @@ pub fn internal_number_from_string(s: &str) -> u64 {
 
 impl<'a> Serialize for BinaryFormatWithoutFieldUid<'a, Amount> {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()> {
-        writer.write_u64::<BigEndian>( internal_number_from_string( &format!("{}", self.0.value)))?; // TODO
+        writer.write_u64::<BigEndian>( internal_number_from_string( &format!("{}", self.0.value)))?;
         write_currency(writer, &self.0.currency)?;
         BinaryFormatWithoutLength(&self.0.issuer).serialize(writer)
     }
