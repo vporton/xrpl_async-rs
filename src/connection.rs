@@ -185,7 +185,8 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                             }
                         },
                         Err(err) => {
-                            return Err(err); // TODO
+                            // FIXME: Deal with non-`response` ("asynchronous") WebSocket messages.
+                            return Err(err);
                         },
                     }
                 },
