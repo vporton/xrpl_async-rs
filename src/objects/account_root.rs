@@ -46,7 +46,7 @@ pub struct AccountRoot {
     #[serde(rename = "Sequence")]
     pub sequence: u32,
     #[serde(rename = "TicketCount")]
-    pub ticket_count: Option<u8>, // TODO: No need for `Option` here.
+    pub ticket_count: Option<u8>,
     #[serde(rename = "TickSize")]
     pub tick_size: Option<u8>,
     #[serde(rename = "TransferRate")]
