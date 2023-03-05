@@ -102,7 +102,6 @@ impl StreamedResponse {
         struct StreamedResponse2 {
             pub result: Value,
             pub id: u64,
-            // TODO: `type`
             pub warnings: Option<Vec<Warning>>,
             // pub status: String, // no need, know by missing `result` // TODO
             pub forwarded: Option<bool>,
