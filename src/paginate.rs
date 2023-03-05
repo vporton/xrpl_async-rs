@@ -112,13 +112,13 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                 }
             };
             if let Some(marker) = marker {
-                let mut request = this.request.clone();
-                if let Value::Object(obj) = request.params {
-                    let mut m = obj;
+                let mut request = &mut this.request;
+                if let Value::Object(obj) = &request.params {
+                    let mut m = obj.clone();
                     m.insert(MARKER_KEY.clone(), marker);
                     request.params = Value::Object(m);
                 }
-                loader(&request)
+                loader(request)
             } else {
                 Poll::Ready(None)
             }
