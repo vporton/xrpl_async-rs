@@ -86,8 +86,8 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                         load = response.load;
                         forwarded = response.forwarded;
                         warnings = response.warnings;
-                        // TODO: Duplicate code:
-                        // TODO: Can do without `clone`?
+                        // Duplicate code:
+                        // Can do without `clone`?
                         this.list = T::list(&response.result)
                             .map_err(de::Error::custom)?
                             .iter()
