@@ -50,6 +50,7 @@ impl<'de, T: Deserialize<'de>> TryFrom<Response> for TypedResponse<T> {
 }
 
 impl Response {
+    // TODO: Replace `&Value` by `Value` to avoid `clone`.
     pub fn from_json(s: &Value) -> Result<Self, XrplError> {
         #[derive(Deserialize)]
         struct Response2 {
@@ -58,7 +59,7 @@ impl Response {
             pub warnings: Option<Vec<Warning>>,
             pub forwarded: Option<bool>,
         }
-        let data: Response2 = serde_json::from_value(s.clone())?; // TODO: Don't `clone`.
+        let data: Response2 = serde_json::from_value(s.clone())?;
         if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
             // TODO: duplicate code
             return if let Some(Value::String(err)) = data.result.get("error") {
@@ -67,10 +68,9 @@ impl Response {
                 Err(XrplError::WrongFormat)
             };
         }
-        // TODO: Implement without `clone`.
         Ok(Self {
             result: data.result,
-            load: data.warning == Some(LOAD_KEY.clone()),
+            load: data.warning.as_ref() == Some(&*LOAD_KEY),
             warnings: data.warnings,
             forwarded: data.forwarded == Some(true),
         })
