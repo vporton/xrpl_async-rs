@@ -70,7 +70,8 @@ pub async fn sign_and_submit<'a, A, T>(api: &A,
 {
     let tx = sign_transaction(tx, public_key, secret_key);
     let mut ser = Vec::new();
-    T::serialize(&tx, &HASH_PREFIX_TRANSACTION, &mut ser).unwrap(); // TODO: `unwrap`
+    T::serialize(&tx, &HASH_PREFIX_TRANSACTION, &mut ser)
+        .map_err(|_| de::Error::custom("Cannot serialize a transaction (internal error)"))?;
     let request = TransactionRequest {
         tx_blob: ser,
         fail_hard,
