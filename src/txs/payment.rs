@@ -105,12 +105,12 @@ mod tests {
         // let mut tx = tx;
         // tx.set_public_key(Encoding(*(<&[u8; 33]>::try_from(public_key.as_slice()).unwrap())));
         let mut ser = Vec::new();
-        PaymentTransaction::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap(); // TODO: `unwrap`
+        PaymentTransaction::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).except("Cannot serialize unsigned transaction");
         assert_eq!(ser.as_slice(), hex::decode("5354580012000061D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA969D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA981147CCFE86388B264396710C29F69025DB1DFA4AE4C83147CCFE86388B264396710C29F69025DB1DFA4AE4C").unwrap());
         let mut tx = sign_transaction(tx, Encoding(public_key.as_slice().try_into().unwrap()), &private_key);
         tx.signature = None;
         let mut ser = Vec::new();
-        PaymentTransaction::serialize(&tx, &HASH_PREFIX_TRANSACTION, &mut ser).unwrap(); // TODO: `unwrap`
+        PaymentTransaction::serialize(&tx, &HASH_PREFIX_TRANSACTION, &mut ser).except("Cannot serialize signed transaction");
         // Apparently, in JavaScript's serialization SigningPubKey is missing
         // assert_eq!(ser, hex::decode("5354580012000061D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA969D4C38D7EA4C6800000000000000000000000000055534400000000004B4E9C06F24296074F7BC48F92A97916C6DC5EA97321EDC5248F3F06990D2E694C83AF55C45206ACD4AABC1151020600ECD6B75A5FF62881147CCFE86388B264396710C29F69025DB1DFA4AE4C83147CCFE86388B264396710C29F69025DB1DFA4AE4C").unwrap());
     }
