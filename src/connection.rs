@@ -1,7 +1,6 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::str::FromStr;
 use fragile::Fragile;
 use serde_json::Value;
 use async_trait::async_trait;
@@ -9,6 +8,7 @@ use reqwest::{Client, StatusCode};
 use serde::de;
 use workflow_websocket::client::{Message, WebSocket};
 use derive_more::{From, Display};
+use lazy_static::lazy_static;
 use crate::connection::XrplError::Connection;
 use crate::request::{Request, StreamedRequest};
 use crate::response::{Response, StreamedResponse};
@@ -148,6 +148,10 @@ struct WebSocketMessageWaiterWithoutDrop<'a> {
     id: u64,
 }
 
+lazy_static!{
+    static ref RESPONSE_KEY: String = "response".to_string();
+}
+
 impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
     pub async fn create(api: &'a WebSocketApi, request: Request<'a>)
                         -> Result<WebSocketMessageWaiterWithoutDrop<'a>, XrplError>
@@ -176,7 +180,12 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                     return Err(XrplError::Disconnect);
                 },
                 Message::Text(msg) => {
-                    let response: Result<StreamedResponse, XrplError> = StreamedResponse::from_str(&msg);
+                    let r: Value = serde_json::from_str(&msg)?;
+                    if r.get("type") != Some(&Value::String(RESPONSE_KEY.clone())) {
+                        // TODO: Deal with non-`response` ("asynchronous") WebSocket messages.
+                        continue;
+                    }
+                    let response: Result<StreamedResponse, XrplError> = StreamedResponse::from_json(&r);
                     match response {
                         Ok(response) => {
                             self.api.responses.get().borrow_mut().insert(response.id, response.result);
@@ -185,7 +194,6 @@ impl<'a> WebSocketMessageWaiterWithoutDrop<'a> {
                             }
                         },
                         Err(err) => {
-                            // FIXME: Deal with non-`response` ("asynchronous") WebSocket messages.
                             return Err(err);
                         },
                     }

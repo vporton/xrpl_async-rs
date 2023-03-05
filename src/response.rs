@@ -90,7 +90,6 @@ impl FromStr for Response {
 pub struct StreamedResponse {
     pub result: Response,
     pub id: u64,
-    // TODO: `type` // FIXME: Accept replies only with `type == "response"`.
 }
 
 // https://github.com/serde-rs/serde/issues/2382
