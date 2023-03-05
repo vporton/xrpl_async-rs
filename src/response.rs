@@ -97,6 +97,7 @@ pub struct StreamedResponse {
 // impl<'de> Deserialize<'de> for Response {
 
 impl StreamedResponse {
+    // TODO: Replace `&Value` by `Value` to avoid `clone`.
     pub fn from_json(s: &Value) -> Result<Self, XrplError> {
         #[derive(Deserialize)]
         struct StreamedResponse2 {
@@ -104,17 +105,15 @@ impl StreamedResponse {
             pub id: u64,
             // TODO: `type`
             pub warnings: Option<Vec<Warning>>,
-            // pub status: String, // no need, know by missing `result`
+            // pub status: String, // no need, know by missing `result` // TODO
             pub forwarded: Option<bool>,
             pub warning: Option<String>,
         }
-        // TODO: Don't `clone`.
         let data: StreamedResponse2 = match serde_json::from_value(s.clone()) {
             Ok(data) => data,
-            // TODO: Rewrite this:
             Err(_) => { // no `result`
-                return if let Some(Value::String(s)) = s.get("error".to_owned()) {
-                    Err(XrplStatusError::new(s.clone()).into())
+                return if let Some(Value::String(e)) = s.get(&*ERROR_KEY) {
+                    Err(XrplStatusError::new(e.clone()).into())
                 } else {
                     Err(XrplError::WrongFormat)
                 }
