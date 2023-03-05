@@ -13,7 +13,7 @@ pub struct BinaryFormatWithoutFieldUid<'a, T>(pub &'a T);
 /// Serialization of this should, contrary to intuition, be defined only for formats that are serialized with length.
 pub struct BinaryFormatWithoutLength<'a, T>(pub &'a T);
 
-// TODO: Make it asynchronous.
+/// Make it asynchronous?
 pub trait Serialize {
     fn serialize(&self, writer: &mut dyn Write) -> io::Result<()>;
 }
