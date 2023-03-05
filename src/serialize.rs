@@ -49,8 +49,7 @@ impl<'a, T> XrplBinaryField<'a, T> {
     }
 }
 
-// TODO: `pub`?
-pub fn serialize_length(writer: &mut dyn Write, length: usize) -> io::Result<()> {
+fn serialize_length(writer: &mut dyn Write, length: usize) -> io::Result<()> {
     // Essentially copied from https://github.com/gmosx/xrpl_sdk_rust/blob/1ba1c8872caa1a2f80db4346f685e8c940518bc9/xrpl_binary_codec/src/serializer.rs:
     if length <= 192 {
         writer.write_u8(length as u8)?;
