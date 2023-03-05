@@ -17,7 +17,7 @@ pub fn sign_transaction<T: Transaction>(tx: T, public_key: &AccountPublicKey, se
     let mut tx = tx;
     tx.set_public_key(public_key.clone());
     let mut ser = Vec::new();
-    T::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap(); // TODO: `unwrap`
+    T::serialize(&tx, &HASH_PREFIX_UNSIGNED_TRANSACTION_SINGLE, &mut ser).unwrap();
     let signature = sign(ser.as_slice(), secret_key.0.0.as_slice());
     tx.set_signature(signature);
     tx
