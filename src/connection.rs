@@ -109,6 +109,7 @@ impl Api for JsonRpcApi {
 }
 
 // Is this efficient?
+// TODO: It seems that `Mutex` or `RwLock` instead will suit here.
 pub struct WebSocketApi {
     client: WebSocket,
     responses: Fragile<RefCell<HashMap<u64, Response>>>,
