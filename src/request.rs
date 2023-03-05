@@ -43,7 +43,6 @@ impl<'a, T: Serialize> Serialize for TypedRequest<'a, T> {
 }
 
 /// For WebSocket.
-/// TODO: `pub`?
 #[derive(Debug)]
 pub struct StreamedRequest<'a> {
     pub request: Request<'a>,
