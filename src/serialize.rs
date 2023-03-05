@@ -8,12 +8,9 @@ use crate::types::Hash;
 // in conflict with XrplBinaryField:
 // pub struct BinaryFormat<'a, T>(pub &'a T);
 
-/// TODO: Remove `pub`?
 pub struct BinaryFormatWithoutFieldUid<'a, T>(pub &'a T);
 
 /// Serialization of this should, contrary to intuition, be defined only for formats that are serialized with length.
-///
-/// TODO: Remove `pub`?
 pub struct BinaryFormatWithoutLength<'a, T>(pub &'a T);
 
 // TODO: Make it asynchronous.
