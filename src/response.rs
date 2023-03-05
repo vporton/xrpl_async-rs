@@ -60,7 +60,7 @@ impl Response {
             pub forwarded: Option<bool>,
         }
         let data: Response2 = serde_json::from_value(s.clone())?;
-        if data.result.get("status") != Some(&Value::String("success".to_owned())) { // TODO: Don't `.to_owned`
+        if data.result.get("status") != Some(&Value::String(SUCCESS_KEY.to_owned())) {
             // duplicate code
             return if let Some(Value::String(err)) = data.result.get("error") {
                 Err(XrplStatusError::new(err.clone()).into())
