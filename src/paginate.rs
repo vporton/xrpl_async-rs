@@ -95,7 +95,6 @@ impl<'a, A: Api, T: PaginatorExtractor<'a>> Stream for Paginator<'a, A, T>
                             .collect::<Result<VecDeque<T>, XrplError>>()?;
                         this.marker = response.result.get(&*MARKER_KEY).cloned();
                         if let Some(front) = this.list.pop_front() {
-                            #[allow(unused_assignments)]
                             Poll::Ready(Some(Ok(
                                 TypedResponse {
                                     result: front,
