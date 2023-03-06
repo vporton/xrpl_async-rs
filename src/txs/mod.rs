@@ -22,3 +22,4 @@ pub fn sign_transaction<T: Transaction>(tx: T, public_key: &AccountPublicKey, se
     tx.set_signature(signature);
     tx
 }
+

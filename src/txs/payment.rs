@@ -19,8 +19,9 @@ pub struct PaymentTransaction {
     pub sequence: Option<u32>,
     #[binary(id = "AccountTxnID", rtype = "Hash256")]
     pub account_txn_id: Option<Hash<32>>,
+    /// Global flags should be zero.
     #[binary(id = "Flags", rtype = "UInt32")]
-    pub flags: Option<u32>, // TODO: flag values
+    pub flags: Option<u32>,
     #[binary(id = "LastLedgerSequence", rtype = "UInt32")]
     pub last_ledger_sequence: Option<u32>,
     // TODO: https://github.com/XRPLF/xrpl-dev-portal/issues/1792
