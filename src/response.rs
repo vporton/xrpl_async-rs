@@ -114,7 +114,7 @@ impl StreamedResponse {
         };
         let data: StreamedResponse2 = match (status_is_success, serde_json::from_value(s.clone())) {
             (true, Ok(data)) => data,
-            _ => { // no `result`
+            _ => {
                 return if let Some(Value::String(e)) = s.get(&*ERROR_KEY) {
                     Err(XrplStatusError::new(e.clone()).into())
                 } else {
