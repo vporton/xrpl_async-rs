@@ -107,7 +107,11 @@ impl StreamedResponse {
             pub forwarded: Option<bool>,
             pub warning: Option<String>,
         }
-        let status_is_success = s.get("status") == Some(&Value::String(SUCCESS_KEY.to_owned()));
+        let status_is_success = if let Some(status) = s.get("status") {
+            status.as_str() == Some(SUCCESS_KEY.as_str())
+        } else {
+            false
+        };
         let data: StreamedResponse2 = match (status_is_success, serde_json::from_value(s.clone())) {
             (true, Ok(data)) => data,
             _ => { // no `result`
