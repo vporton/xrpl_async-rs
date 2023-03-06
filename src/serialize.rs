@@ -1,4 +1,5 @@
 use std::io::{self, Write};
+use std::io::ErrorKind::InvalidData;
 use byteorder::{BigEndian, WriteBytesExt};
 use xrpl::utils::{MAX_IOU_EXPONENT, MIN_IOU_EXPONENT};
 use crate::hashes::{Address, Encoding};
@@ -63,7 +64,7 @@ fn serialize_length(writer: &mut dyn Write, length: usize) -> io::Result<()> {
         writer.write_u8(((length >> 8) & 0xff) as u8)?;
         writer.write_u8((length & 0xff) as u8)?;
     } else {
-        panic!("too long data"); // TODO: better error than panic?
+        return Err(io::Error::new(InvalidData, "Data field is too long."));
     }
     Ok(())
 }
