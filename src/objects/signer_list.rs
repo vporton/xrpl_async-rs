@@ -4,7 +4,10 @@ use crate::types::Hash;
 
 #[derive(Clone, Copy, Debug)]
 pub struct SignerListFlags(u32);
-// TODO: Values of flags: https://xrpl.org/signerlist.html#signerlist-flags
+
+pub mod signer_list_flags {
+    pub const LSF_ONE_OWNER_COUNT: u64 = 0x00010000;
+}
 
 impl<'de> Deserialize<'de> for SignerListFlags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
