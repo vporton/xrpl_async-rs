@@ -103,13 +103,14 @@ impl StreamedResponse {
             pub result: Value,
             pub id: u64,
             pub warnings: Option<Vec<Warning>>,
-            // pub status: String, // no need, know by missing `result` // TODO
+            // pub status: String,
             pub forwarded: Option<bool>,
             pub warning: Option<String>,
         }
-        let data: StreamedResponse2 = match serde_json::from_value(s.clone()) {
-            Ok(data) => data,
-            Err(_) => { // no `result`
+        let status_is_success = s.get("status") == Some(&Value::String(SUCCESS_KEY.to_owned()));
+        let data: StreamedResponse2 = match (status_is_success, serde_json::from_value(s.clone())) {
+            (true, Ok(data)) => data,
+            _ => { // no `result`
                 return if let Some(Value::String(e)) = s.get(&*ERROR_KEY) {
                     Err(XrplStatusError::new(e.clone()).into())
                 } else {
