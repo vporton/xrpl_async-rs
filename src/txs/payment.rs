@@ -24,7 +24,7 @@ pub struct PaymentTransaction {
     pub flags: Option<u32>,
     #[binary(id = "LastLedgerSequence", rtype = "UInt32")]
     pub last_ledger_sequence: Option<u32>,
-    // TODO: https://github.com/XRPLF/xrpl-dev-portal/issues/1792
+    // TODO: https://github.com/XRPLF/xrpl-dev-portal/issues/1792 (also `Paths` below)
     // #[binary(id = "Memos", rtype = "Array")]
     // pub memos: Option<Vec<_>>,
     // #[binary(id = "Signers", rtype = "Array")]
@@ -46,7 +46,6 @@ pub struct PaymentTransaction {
     pub destination_tag: Option<u32>,
     #[binary(id = "InvoiceID", rtype = "Hash256")]
     pub invoice_id: Option<Hash<32>>,
-    // TODO: Add `Paths`
     // #[binary(id = "Paths")]
     // pub paths: Option<Hash<32>>,
     #[binary(id = "SendMax", rtype = "Amount")]
