@@ -1,6 +1,10 @@
 # xrpl_async-rs
 
-_(This project is not ready yet.)_
+_(The basics are almost fully done during the hackathon, but only
+some request methodss and transaction types are implemented, so the
+library is not yet practically usable. It is anticipated that
+XRPL Foundation will give a grant to implement all methods and types
+and test them.)_
 
 This is fully asynchronous XRPL client written in idiomatic Rust:
 
@@ -12,8 +16,9 @@ This is fully asynchronous XRPL client written in idiomatic Rust:
 
 By fully asynchronous, I mean:
 - Single async call not only for JsonRpcApi to receive the result of the call, but also single async call to WebSocketApi to receive the result of the call.
+  The Rust API for JSON RPC and for WebSocket are the same.
 - Multipage answers (with "marker") are single asynchronous stream.
-- (not yet implemented) asynchronous watching blockchain events (such as
+- (not yet implemented, see `TODO.md`) asynchronous watching blockchain events (such as
   a transaction going approved by the network).
 
 Example:

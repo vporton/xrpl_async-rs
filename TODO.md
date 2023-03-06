@@ -6,6 +6,7 @@
 - Doc comments.
 - Debug print `Hash` and `Account` in hex.
 - Asynchronous interface for watching when a ledger/transaction becomes
-  included into the ledger.
+  included into the ledger (subproject on hold till answer to
+  [this issue](https://github.com/XRPLF/xrpl-dev-portal/issues/1794)).
 - `FIXME` and `TODO` in the sources.
 - File `TODO-checkboxes.md`.
