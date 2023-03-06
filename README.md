@@ -1,7 +1,7 @@
 # xrpl_async-rs
 
 _(The basics are almost fully done during the hackathon, but only
-some request methodss and transaction types are implemented, so the
+some request methods and transaction types are implemented, so the
 library is not yet practically usable. It is anticipated that
 XRPL Foundation will give a grant to implement all methods and types
 and test them.)_
