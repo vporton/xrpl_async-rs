@@ -1,5 +1,6 @@
-use proc_macro::TokenStream;
 use std::collections::HashMap;
+use std::{path::Path, env};
+use proc_macro::TokenStream;
 use quote::quote;
 use itertools::Itertools;
 use syn::{Data::Struct, Fields::Named, AttrStyle, Lit, Meta, MetaList, NestedMeta};
@@ -10,11 +11,11 @@ use lazy_static::lazy_static;
 #[allow(dead_code)]
 struct FieldInfo {
     nth: i16,
-    #[serde(rename="isVLEncoded")]
+    #[serde(rename = "isVLEncoded")]
     is_vl_encoded: bool,
-    #[serde(rename="isSerialized")]
+    #[serde(rename = "isSerialized")]
     is_serialized: bool,
-    #[serde(rename="isSigningField")]
+    #[serde(rename = "isSigningField")]
     is_signing_field: bool,
     r#type: String,
 }
@@ -27,10 +28,11 @@ struct Definitions {
     pub fields: HashMap<(String, String), FieldInfo>, // (Name, Type) -> FieldInfo
 }
 
-lazy_static!{
+lazy_static! {
     static ref DEFINITIONS: Definitions = {
-        // TODO: Use Cargo env vars to find the file.
-        let file = std::fs::File::open("definitions.json").expect("Can't open definitions.json");
+        let path = Path::new(&env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR env var missing"))
+            .join("definitions.json");
+        let file = std::fs::File::open(path).expect("Can't open definitions.json");
         serde_json::from_reader(file).expect("Can't read file")
     };
 }
@@ -39,11 +41,11 @@ impl<'de> Deserialize<'de> for Definitions {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         #[derive(Debug, Deserialize)]
         struct Definitions2 {
-            #[serde(rename="TYPES")]
+            #[serde(rename = "TYPES")]
             pub types: HashMap<String, i16>,
-            #[serde(rename="LEDGER_ENTRY_TYPES")]
+            #[serde(rename = "LEDGER_ENTRY_TYPES")]
             pub ledger_entry_types: HashMap<String, i16>,
-            #[serde(rename="FIELDS")]
+            #[serde(rename = "FIELDS")]
             pub fields: Vec<(String, FieldInfo)>,
         }
         let value: Definitions2 = Definitions2::deserialize(deserializer)?;
