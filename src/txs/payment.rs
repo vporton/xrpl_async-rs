@@ -23,9 +23,10 @@ pub struct PaymentTransaction {
     pub flags: Option<u32>, // TODO: flag values
     #[binary(id = "LastLedgerSequence", rtype = "UInt32")]
     pub last_ledger_sequence: Option<u32>,
-    // #[binary(id = "Memos", rtype = "Array")] // TODO
+    // TODO: https://github.com/XRPLF/xrpl-dev-portal/issues/1792
+    // #[binary(id = "Memos", rtype = "Array")]
     // pub memos: Option<Vec<_>>,
-    // #[binary(id = "Signers", rtype = "Array")] // TODO
+    // #[binary(id = "Signers", rtype = "Array")]
     // pub signers: Option<Vec<_>>,
     #[binary(id = "SourceTag", rtype = "UInt32")]
     pub source_tag: Option<u32>,
