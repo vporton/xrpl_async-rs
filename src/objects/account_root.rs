@@ -4,7 +4,19 @@ use crate::types::Hash;
 
 #[derive(Clone, Copy, Debug)]
 pub struct AccountRootFlags(u32);
-// TODO: Values of flags: https://xrpl.org/accountroot.html
+
+pub mod account_root_flags {
+    pub const LSF_AMM: u64 = 0x02000000;
+    pub const LSF_DEFAULT_RIPPLE: u64 = 0x00800000;
+    pub const LSF_DEPOSIT_AUTH: u64 = 0x01000000;
+    pub const LSF_DISABLE_MASTER: u64 = 0x00100000;
+    pub const LSF_DISALLOW_XRP: u64 = 0x00080000;
+    pub const LSF_GLOBAL_FREEZE: u64 = 0x00400000;
+    pub const LSF_NO_FREEZE: u64 = 0x00200000;
+    pub const LSF_PASSWORD_SPENT: u64 = 0x00010000;
+    pub const LSF_REQUIRE_AUTH: u64 = 0x00040000;
+    pub const LSF_REQUIRE_DEST_TAG: u64 = 0x00020000;
+}
 
 impl<'de> Deserialize<'de> for AccountRootFlags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
