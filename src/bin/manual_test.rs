@@ -91,7 +91,7 @@ async fn main() {
     let response = sign_and_submit(&api2,
                                    tx,
                                    &Encoding(public_key.as_slice().try_into().unwrap()),
-                                   &private_key, //.as_slice(),
+                                   &private_key,
                                    true).await.unwrap_err();
     println!("TX RESPONSE: {}", response);
 }
