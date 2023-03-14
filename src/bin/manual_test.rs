@@ -51,7 +51,6 @@ async fn main() {
     let (public_key, private_key) =
         (hex::decode(public_key).unwrap(), hex::decode(private_key).unwrap());
     let private_key = SecretKey(Hash(*(<&[u8; 32]>::try_from(&private_key[1..33]).unwrap())));
-    // let public_key = &public_key[1..33];
     let tx = PaymentTransaction {
         account: our_address.clone(),
         transaction_type: TRANSACTION_TYPE_PAYMENT,
