@@ -20,19 +20,19 @@ members = [
 xrpl_async_macroses = { path = "macroses" }
 #base58check = "0.1.0" # BitCoin not XRPL format
 #derive = "1.0.0"
-derive_more = "0.99.17"
+derive_more = { version = "2.0.1", features = ["from", "display"] }
 serde_json = "1.0.93"
 lazy_static = "1.4.0"
 async-trait = "0.1.64"
-reqwest = { version = "0.11.14", features = ["json"] }
-workflow-websocket = { version = "0.3.10", features = [] }
+reqwest = { version = "0.12.15", features = ["json"] }
+workflow-websocket = { version = "0.18.0", features = [] }
 fragile = "2.0.0"
 tokio-stream = "0.1.11"
 hex = "0.4.3"
 tokio = "1.25.0"
-xrpl-rust = "0.1.1" # TODO: Probably, should depend on `xrpl_address_codec` instead.
+xrpl-rust = "0.5.0" # TODO: Probably, should depend on `xrpl_address_codec` instead.
 tokio-tungstenite = { version = "*", features = ["native-tls"] }
 serde = "1.0.152"
 byteorder = "1.4.3"
-xrpl_binary_codec = "0.9.0"
+xrpl_binary_codec = "0.16.7"
 sha2 = "0.10.6"
