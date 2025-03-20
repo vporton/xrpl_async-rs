@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::{path::Path, env};
 use proc_macro::TokenStream;
-use quote::quote;
+use proc_macro2::TokenTree;
+use quote::{quote, ToTokens};
 use itertools::Itertools;
-use syn::{Data::Struct, Fields::Named, AttrStyle, Lit, Meta, MetaList, NestedMeta};
+use syn::MetaNameValue;
+use syn::{Attribute, Data::Struct, Fields::Named, AttrStyle, Lit, Meta, parse2};
 use serde::{Deserialize, Deserializer};
 use lazy_static::lazy_static;
 
@@ -67,53 +69,67 @@ pub(crate) fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let fields_data = (&fields.named).into_iter().map(|field| -> Option<_> {
         for attr in &field.attrs {
             if let AttrStyle::Outer = attr.style {
-                if let Ok(Meta::List(MetaList { path, paren_token: _, nested })) = attr.parse_meta() {
-                    if path.is_ident("binary") {
-                        let meta: Vec<_> = nested.into_iter().collect();
-                        if meta.iter().any(|v| if let NestedMeta::Meta(Meta::Path(path)) = v {
-                            path.is_ident("skip")
+                if let Meta::List(list) = &attr.meta {
+                    if list.path.is_ident("binary") {
+                        let meta: Vec<_> = list.tokens.clone().into_iter().collect();
+                        if meta.iter().find(|t| if let TokenTree::Ident(id) = t {
+                            id.to_string() == "skip"
                         } else {
                             false
-                        }) {
+                        }).is_some() {
                             return None;
                         }
-                        let kvs: Vec<_> = meta.iter().filter_map(|v| if let NestedMeta::Meta(Meta::NameValue(kv)) = v {
-                            if kv.path.is_ident("id") {
-                                Some(kv)
+                        let kvs: Vec<_> = meta.iter().filter_map(|t| 
+                            if let Ok(meta) = parse2::<MetaNameValue>(t.into_token_stream()) { // FIXME: Check for more values in the stream.
+                                if meta.path.is_ident("id") {
+                                    Some(meta)
+                                } else {
+                                    None
+                                }
                             } else {
                                 None
                             }
-                        } else {
-                            None
-                        }).collect();
+                        ).collect();
                         if kvs.len() > 1 {
                             panic!("Must be no more than one binary(id)");
                         }
-                        let kvs2: Vec<_> = meta.iter().filter_map(|v| if let NestedMeta::Meta(Meta::NameValue(kv)) = v {
-                            if kv.path.is_ident("rtype") {
-                                Some(kv)
+                        let kvs2: Vec<_> = meta.iter().filter_map(|t| 
+                            if let Ok(meta) = parse2::<MetaNameValue>(t.into_token_stream()) { // FIXME: Check for more values in the stream.
+                                if meta.path.is_ident("rtype") { // FIXME: `type` or `rtype`?
+                                    Some(meta)
+                                } else {
+                                    None
+                                }
                             } else {
                                 None
                             }
-                        } else {
-                            None
-                        }).collect();
+                        ).collect();
                         if kvs2.len() != 1 {
                             panic!("Must be exactly one binary(type)");
                         }
                         let id = if let Some(pair) = kvs.first() {
-                            let Lit::Str(lit) = &pair.lit else {
-                                panic!("binary(rtype) must be a string.")
-                            };
-                            lit.value()
+                            if let syn::Expr::Lit(expr_lit) = &pair.value {
+                                if let Lit::Str(lit) = &expr_lit.lit {
+                                    lit.value()
+                                } else {
+                                    panic!("binary(rtype) must be a string.")
+                                }
+                            } else {
+                                panic!("binary(rtype) must be a literal.")
+                            }
                         } else {
                             field.ident.as_ref().unwrap().to_string()
                         };
                         let r#type = if let Some(pair) = kvs2.first() {
-                            let Lit::Str(lit) = &pair.lit else {
-                                panic!("binary(id) must be a string.")
-                            };
-                            lit.value()
+                            if let syn::Expr::Lit(expr_lit) = &pair.value {
+                                if let Lit::Str(lit) = &expr_lit.lit {
+                                    lit.value()
+                                } else {
+                                    panic!("binary(id) must be a string.")
+                                }
+                            } else {
+                                panic!("binary(id) must be a literal.")
+                            }
                         } else {
                             field.ident.as_ref().unwrap().to_string()
                         };

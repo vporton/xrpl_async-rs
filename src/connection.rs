@@ -15,7 +15,7 @@ use crate::response::{Response, StreamedResponse};
 
 /// Status not `"success"`
 #[derive(Debug, Display)]
-#[display(fmt = "Server error code: {}", "self.code")]
+#[display("Server error code: {}", self.code)]
 pub struct XrplStatusError {
     pub code: String,
 }
@@ -54,22 +54,22 @@ impl JsonRpcApi {
 
 #[derive(Debug, Display, From)]
 pub enum XrplError {
-    #[display(fmt = "{}", _0)]
+    #[display("{}", _0)]
     Message(String),
     #[from(ignore)]
-    #[display(fmt = "Network: {}", _0)]
+    #[display("Network: {}", _0)]
     Connection(String),
-    #[display(fmt = "Server: not JSON: {}", _0)]
+    #[display("Server: not JSON: {}", _0)]
     #[from(ignore)]
     JsonParse(String),
-    #[display(fmt = "Server: wrong JSON")]
+    #[display("Server: wrong JSON")]
     WrongFormat,
-    #[display(fmt = "HTTP status: {}", _0)]
+    #[display("HTTP status: {}", _0)]
     HttpStatus(StatusCode),
-    #[display(fmt = "WebSocket disconnected")]
+    #[display("WebSocket disconnected")]
     Disconnect,
     XrplStatus(XrplStatusError),
-    #[display(fmt = "Cannot construct JSON object (internal error)")]
+    #[display("Cannot construct JSON object (internal error)")]
     CannotConstructJson,
 }
 
@@ -237,7 +237,7 @@ mod tests {
     // #[test]
     #[allow(unused)]
     fn two_waiters() {
-        let websocket = WebSocket::new("ws://example.com", workflow_websocket::client::Options::default()).unwrap();
+        let websocket = WebSocket::new(Some("ws://example.com"), None).unwrap();
         let api = WebSocketApi::new(websocket);
         let _waiter1 =
             WebSocketMessageWaiter::create(&api, Request {

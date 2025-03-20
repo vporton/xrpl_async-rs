@@ -21,13 +21,13 @@ impl WrongPrefixError {
 
 #[derive(Debug, Display, From)]
 pub enum FromXRPDecodingError {
-    #[display(fmt = "Wrong base58 format.")]
+    #[display("Wrong base58 format.")]
     FromBase58Check(XRPLAddressCodecException),
-    #[display(fmt = "Wrong hex number.")]
+    #[display("Wrong hex number.")]
     Hex(FromHexError),
-    #[display(fmt = "Wrong base58 prefix.")]
+    #[display("Wrong base58 prefix.")]
     WrongPrefix(WrongPrefixError),
-    #[display(fmt = "Wrong array length.")]
+    #[display("Wrong array length.")]
     WrongLength(TryFromSliceError),
 }
 
